@@ -10,3 +10,4 @@ nohup.out
 *.db
 circumflex-orm/lib
 
+/lib_managed
