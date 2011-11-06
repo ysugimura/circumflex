@@ -1,6 +1,8 @@
-import ru.circumflex._
+package circumflex_orm_only
+
 import ru.circumflex.orm._
 import ru.circumflex.core._
+
 
 class Country extends Record[String, Country] {
   val code = "code".VARCHAR(2).NOT_NULL.DEFAULT("'ch'")
@@ -30,12 +32,24 @@ object City extends City with Table[Long, City]
 object Creation {
 
   def main(args: Array[String]) {
+    import ru.circumflex.core._
+
+    // create my-configuration, put to context
+    val conf = new MyORMConfiguration
+    conf.url = "jdbc:h2:sample";
+    conf.username = "sa"
+    conf.password = ""
+    conf.dialect = new H2Dialect
+    
+    ctx.put("orm.conf", conf)
+    /*
     
     val cx = Circumflex
     cx("orm.connection.driver") = "org.h2.Driver"
     cx("orm.connection.url") = "jdbc:h2:sample"
     cx("orm.connection.username") = "sa"
     cx("orm.connection.password") = ""
+    */
     
     val unit = new DDLUnit(Country, City)
     unit.CREATE()

@@ -26,6 +26,11 @@ Following objects configure different aspects of Circumflex ORM:
   for execution contexts.
 */
 
+/**
+ * You can't override vals in subclasses.
+ * So all fields should be defs.
+ * ysugimura 2011/11/6
+ */
 trait ORMConfiguration {
 
   // Configuration identification
@@ -35,20 +40,46 @@ trait ORMConfiguration {
 
   // Database connectivity parameters
 
-  val url = cx.get("orm.connection.url")
+  def url: String
+  def username: String
+  def password: String
+  def dialect: Dialect
+  def driver: String
+  def isolation: Int
+
+  // Configuration objects
+
+  def typeConverter: TypeConverter
+  def transactionManager: TransactionManager
+  def defaultSchema: Schema
+  def statisticsManager: StatisticsManager
+  def connectionProvider: ConnectionProvider
+}
+
+/** this trait reads only cx */
+trait ORMConfigurationCx extends ORMConfiguration {
+
+  // Configuration identification
+
+  //def name: String
+  //def prefix(sym: String) = if (name == "") "" else name + sym
+
+  // Database connectivity parameters
+
+  override val url = cx.get("orm.connection.url")
       .map(_.toString)
       .getOrElse(throw new ORMException(
     "Missing mandatory configuration parameter 'orm.connection.url'."))
-  val username = cx.get("orm.connection.username")
+  override val username = cx.get("orm.connection.username")
       .map(_.toString)
       .getOrElse(throw new ORMException(
     "Missing mandatory configuration parameter 'orm.connection.username'."))
-  val password = cx.get("orm.connection.password")
+  override val password = cx.get("orm.connection.password")
       .map(_.toString)
       .getOrElse(throw new ORMException(
     "Missing mandatory configuration parameter 'orm.connection.password'."))
 
-  lazy val dialect = cx.instantiate[Dialect]("orm.dialect", url match {
+  override lazy val dialect = cx.instantiate[Dialect]("orm.dialect", url match {
     case u if (u.startsWith("jdbc:postgresql:")) => new PostgreSQLDialect
     case u if (u.startsWith("jdbc:mysql:")) => new MySQLDialect
     case u if (u.startsWith("jdbc:oracle:")) => new OracleDialect
@@ -58,12 +89,12 @@ trait ORMConfiguration {
     case _ => new Dialect
   })
 
-  lazy val driver = cx.get("orm.connection.driver") match {
+  override lazy val driver = cx.get("orm.connection.driver") match {
     case Some(s: String) => s
     case _ => dialect.driverClass
   }
 
-  lazy val isolation: Int = cx.get("orm.connection.isolation") match {
+  override lazy val isolation: Int = cx.get("orm.connection.isolation") match {
     case Some("none") => Connection.TRANSACTION_NONE
     case Some("read_uncommitted") => Connection.TRANSACTION_READ_UNCOMMITTED
     case Some("read_committed") => Connection.TRANSACTION_READ_COMMITTED
@@ -77,19 +108,19 @@ trait ORMConfiguration {
 
   // Configuration objects
 
-  lazy val typeConverter: TypeConverter = cx.instantiate[TypeConverter](
+  override lazy val typeConverter: TypeConverter = cx.instantiate[TypeConverter](
     "orm.typeConverter", new TypeConverter)
-  lazy val transactionManager: TransactionManager = cx.instantiate[TransactionManager](
+  override lazy val transactionManager: TransactionManager = cx.instantiate[TransactionManager](
     "orm.transactionManager", new DefaultTransactionManager)
-  lazy val defaultSchema: Schema = new Schema(
+  override lazy val defaultSchema: Schema = new Schema(
     cx.get("orm.defaultSchema").map(_.toString).getOrElse("public"))
-  lazy val statisticsManager: StatisticsManager = cx.instantiate[StatisticsManager](
+  override lazy val statisticsManager: StatisticsManager = cx.instantiate[StatisticsManager](
     "orm.statisticsManager", new StatisticsManager)
-  lazy val connectionProvider: ConnectionProvider = cx.instantiate[ConnectionProvider](
+  override lazy val connectionProvider: ConnectionProvider = cx.instantiate[ConnectionProvider](
     "orm.connectionProvider", new SimpleConnectionProvider(driver, url, username, password, isolation))
 }
 
-class SimpleORMConfiguration(val name: String) extends ORMConfiguration
+class SimpleORMConfiguration(val name: String) extends ORMConfigurationCx
 
 /*!## Connection Provider
 
