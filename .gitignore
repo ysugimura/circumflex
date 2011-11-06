@@ -11,3 +11,4 @@ nohup.out
 circumflex-orm/lib
 
 /lib_managed
+.cache
