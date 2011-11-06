@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="circumflex-orm/src/main/scala"/>
+	<classpathentry kind="src" path="orm-only"/>
 	<classpathentry kind="src" path="circumflex-cache/src/main/scala"/>
 	<classpathentry kind="src" path="circumflex-core/src/main/scala"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="con" path="org.scala-ide.sdt.launching.SCALA_CONTAINER"/>
-	<classpathentry kind="lib" path="lib_managed/jars/net.sf.ehcache/ehcache-core/ehcache-core-2.3.0.jar"/>
-	<classpathentry kind="lib" path="lib_managed/jars/org.slf4j/slf4j-api/slf4j-api-1.5.11.jar"/>
 	<classpathentry kind="lib" path="lib_managed/jars/commons-io/commons-io/commons-io-2.1.jar"/>
 	<classpathentry kind="lib" path="lib_managed/jars/c3p0/c3p0/c3p0-0.9.1.2.jar"/>
 	<classpathentry kind="lib" path="lib_managed/jars/javax.transaction/jta/jta-1.1.jar"/>
+	<classpathentry kind="lib" path="lib_managed/jars/ch.qos.logback/logback-classic/logback-classic-0.9.30.jar"/>
+	<classpathentry kind="lib" path="lib_managed/jars/ch.qos.logback/logback-core/logback-core-0.9.30.jar"/>
+	<classpathentry kind="lib" path="lib_managed/jars/org.slf4j/slf4j-api/slf4j-api-1.6.1.jar"/>
+	<classpathentry kind="lib" path="lib_managed/jars/net.sf.ehcache/ehcache-core/ehcache-core-2.4.6.jar"/>
+	<classpathentry kind="lib" path="lib_managed/jars/com.h2database/h2/h2-1.3.161.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

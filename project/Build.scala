@@ -15,10 +15,14 @@ object MyBuild extends Build {
       libraryDependencies += "asm" % "asm" % "3.3.1",
       libraryDependencies += "c3p0" % "c3p0" % "0.9.1.2",
       libraryDependencies += "cglib" % "cglib" % "2.2.2",
-      libraryDependencies += "net.sf.ehcache" % "ehcache-core" % "2.3.0",
+      libraryDependencies += "net.sf.ehcache" % "ehcache-core" % "2.4.6",
       libraryDependencies += "commons-io" % "commons-io" % "2.1",
       libraryDependencies += "javax.transaction" % "jta" % "1.1",
 
+      // test-only
+      libraryDependencies += "ch.qos.logback" % "logback-classic" % "0.9.30" % "test",
+      libraryDependencies += "com.h2database" % "h2" % "1.3.161" % "test",
+      
       /**
        * orm-only needs these three sources.
        */
@@ -27,6 +31,8 @@ object MyBuild extends Build {
       unmanagedSourceDirectories in Compile <+= 
         baseDirectory{ _ / "circumflex-core" / "src" / "main" / "scala"},      
       unmanagedSourceDirectories in Compile <+= 
-        baseDirectory{ _ / "circumflex-orm" / "src" / "main" / "scala"}      
+        baseDirectory{ _ / "circumflex-orm" / "src" / "main" / "scala"},
+      unmanagedSourceDirectories in Compile <+= 
+        baseDirectory{ _ / "orm-only" }  
   ) 
 }
