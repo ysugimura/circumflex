@@ -1,7 +1,7 @@
 package ru.circumflex
 package orm
 
-
+import core._
 import javax.sql.DataSource
 import javax.naming.InitialContext
 import java.util.Date
@@ -79,7 +79,6 @@ trait ORMConfigurationCx extends ORMConfiguration {
       .getOrElse(throw new ORMException(
     "Missing mandatory configuration parameter 'orm.connection.password'."))
 
-    /*TODO
   override lazy val dialect = cx.instantiate[Dialect]("orm.dialect", url match {
     case u if (u.startsWith("jdbc:postgresql:")) => new PostgreSQLDialect
     case u if (u.startsWith("jdbc:mysql:")) => new MySQLDialect
@@ -89,8 +88,6 @@ trait ORMConfigurationCx extends ORMConfiguration {
     case u if (u.startsWith("jdbc:db2:")) => new DB2Dialect
     case _ => new Dialect
   })
-  */
-    override def dialect: Dialect = throw new Exception("NOT SUPPORTED")
 
   override lazy val driver = cx.get("orm.connection.driver") match {
     case Some(s: String) => s

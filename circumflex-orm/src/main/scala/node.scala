@@ -102,12 +102,11 @@ class RelationNode[PK, R <: Record[PK, R]](val relation: Relation[PK, R])
       this.relation == that.relation
   }
 
-  def toSql(ormConf: ORMConfiguration): String = ormConf.dialect.alias(relation.qualifiedName, alias)
+  def toSql: String = ormConf.dialect.alias(relation.qualifiedName, alias)
 
   override def clone(): this.type = super.clone.asInstanceOf[this.type]
 
-  //TODO override def toString: String = toSql
-  override def toString: String = throw new Exception("NOT SUPPORTED")
+  override def toString: String = toSql
 }
 
 /*!## Implicit Convertions
@@ -159,7 +158,7 @@ class ProxyNode[PK, R <: Record[PK, R]](var node: RelationNode[PK, R])
   override def equals(obj: Any) = node.equals(obj)
   override def hashCode = node.hashCode
 
-  override def toSql(ormConf: ORMConfiguration) = node.toSql(ormConf)
+  override def toSql = node.toSql
 
   override def clone(): this.type = {
     val newNode = super.clone().asInstanceOf[this.type]
@@ -200,7 +199,7 @@ class JoinNode[PKL, L <: Record[PKL, L], PKR, R <: Record[PKR, R]](
     this
   }
 
-  def sqlOn(implicit ormConf: ORMConfiguration) = ormConf.dialect.on(this.onClause)
+  def sqlOn = ormConf.dialect.on(this.onClause)
 
   override def projections = left.projections ++ right.projections
 
@@ -214,7 +213,7 @@ class JoinNode[PKL, L <: Record[PKL, L], PKR, R <: Record[PKR, R]](
     this
   }
 
-  override def toSql(ormConf: ORMConfiguration) = ormConf.dialect.join(this)
+  override def toSql = ormConf.dialect.join(this)
 
   override def clone(): this.type = super.clone()
       .replaceLeft(this.left.clone())

@@ -17,12 +17,12 @@ object Predicate {
 
 object EmptyPredicate extends Predicate {
   def parameters: scala.Seq[Any] = Nil
-  def toSql(ormConf: ORMConfiguration): String = ormConf.dialect.emptyPredicate
+  def toSql: String = ormConf.dialect.emptyPredicate
 }
 
 class SimpleExpression(val expression: String, val parameters: Seq[Any])
     extends Predicate {
-  def toSql(ormConf: ORMConfiguration) = expression
+  def toSql = expression
 }
 
 class AggregatePredicate(val operator: String,
@@ -40,15 +40,15 @@ class AggregatePredicate(val operator: String,
       Some(p.predicates(0))
     case p => Some(p)
   }
-  def toSql(ormConf: ORMConfiguration): String = {
+  def toSql: String = {
     val p = predicates
-    if (p.size == 0) EmptyPredicate.toSql(ormConf)
-    else "(" + p.map(_.toSql(ormConf)).mkString(" " + operator + " ") + ")"
+    if (p.size == 0) EmptyPredicate.toSql
+    else "(" + p.map(_.toSql).mkString(" " + operator + " ") + ")"
   }
 }
 
 class SubqueryExpression[T](expression: String,
-                            val subquery: SQLQuery[T])(implicit ormConf: ORMConfiguration)
+                            val subquery: SQLQuery[T])
     extends SimpleExpression(
       ormConf.dialect.subquery(expression, subquery), subquery.parameters)
 
@@ -76,35 +76,35 @@ class SimpleExpressionHelper(val expr: String) {
 
   // Simple subqueries
 
-  def IN(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def IN(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.IN(expr), query)
-  def NOT_IN(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def NOT_IN(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.NOT_IN(expr), query)
 
-  def EQ_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def EQ_ALL(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.EQ(expr, ormConf.dialect.ALL), query)
-  def NE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def NE_ALL(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.NE(expr, ormConf.dialect.ALL), query)
-  def GT_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def GT_ALL(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.GT(expr, ormConf.dialect.ALL), query)
-  def GE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def GE_ALL(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.GE(expr, ormConf.dialect.ALL), query)
-  def LT_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def LT_ALL(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.LT(expr, ormConf.dialect.ALL), query)
-  def LE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def LE_ALL(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.LE(expr, ormConf.dialect.ALL), query)
 
-  def EQ_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def EQ_SOME(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.EQ(expr, ormConf.dialect.SOME), query)
-  def NE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def NE_SOME(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.NE(expr, ormConf.dialect.SOME), query)
-  def GT_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def GT_SOME(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.GT(expr, ormConf.dialect.SOME), query)
-  def GE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def GE_SOME(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.GE(expr, ormConf.dialect.SOME), query)
-  def LT_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def LT_SOME(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.LT(expr, ormConf.dialect.SOME), query)
-  def LE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
+  def LE_SOME(query: SQLQuery[_]) =
     new SubqueryExpression(ormConf.dialect.LE(expr, ormConf.dialect.SOME), query)
 }
 

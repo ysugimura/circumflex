@@ -32,7 +32,6 @@ object City extends City with Table[Long, City]
 object Creation {
 
   def main(args: Array[String]) {
-    /*
     import ru.circumflex.core._
 
     // create my-configuration, put to context
@@ -54,6 +53,5 @@ object Creation {
     
     val unit = new DDLUnit(Country, City)
     unit.CREATE()
-    */
   }
 }

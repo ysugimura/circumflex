@@ -32,8 +32,7 @@ trait Projection[T] extends SQLable {
     this
   }
 
-  //TODO override def toString = toSql
-  override def toString = throw new Exception("NOT SUPPORTED")
+  override def toString = toSql
 }
 
 object Projection {
@@ -64,13 +63,13 @@ trait CompositeProjection[T] extends Projection[T] {
     _hash
   }
 
-  def toSql(ormConf: ORMConfiguration) = subProjections.map(_.toSql(ormConf)).mkString(", ")
+  def toSql = subProjections.map(_.toSql).mkString(", ")
 }
 
 class ExpressionProjection[T](val expression: String)
     extends AtomicProjection[T] {
 
-  def toSql(ormConf: ORMConfiguration) = ormConf.dialect.alias(expression, alias)
+  def toSql = ormConf.dialect.alias(expression, alias)
 
   def read(rs: ResultSet): Option[T] = {
     val o = rs.getObject(alias)
@@ -94,7 +93,7 @@ class FieldProjection[T, R <: Record[_, R]](
 
   def expression = ormConf.dialect.qualifyColumn(field, node.alias)
 
-  def toSql(ormConf: ORMConfiguration) = ormConf.dialect.alias(expression, alias)
+  def toSql = ormConf.dialect.alias(expression, alias)
 
   def read(rs: ResultSet) = field.read(rs, alias)
 

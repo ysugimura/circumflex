@@ -14,7 +14,7 @@ Following vendors are currently supported by Circumflex ORM:
 We also provide limited support for `Oracle`, `MS SQL Server` and `DB2`.
 We would appreciate any commits for better vendors support.
 */
-class H2Dialect(implicit ormConf: ORMConfiguration) extends Dialect {
+class H2Dialect extends Dialect {
   override def driverClass = "org.h2.Driver"
   override def textType = "VARCHAR"
   override def createIndex(idx: Index): String = {
@@ -23,18 +23,18 @@ class H2Dialect(implicit ormConf: ORMConfiguration) extends Dialect {
     result += "INDEX " + idx.name + " ON " + idx.relation.qualifiedName +
         " (" + idx.expression + ")"
     if (idx.whereClause != EmptyPredicate)
-      result += " WHERE " + idx.whereClause.toInlineSql(ormConf)
+      result += " WHERE " + idx.whereClause.toInlineSql
     result
   }
   override def dropSchema(schema: Schema) = "DROP SCHEMA " + schema.name
 }
 
-class PostgreSQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
+class PostgreSQLDialect extends Dialect {
   override def driverClass = "org.postgresql.Driver"
   override def timestampType = "TIMESTAMPTZ"
 }
 
-class MySQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
+class MySQLDialect extends Dialect {
   override def supportsSchema = false
   override def driverClass = "com.mysql.jdbc.Driver"
 
@@ -69,13 +69,13 @@ class MySQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
   }
 
   override def delete[PK, R <: Record[PK, R]](dml: Delete[PK, R]): String = {
-    var result = "DELETE " + dml.node.alias + " FROM " + dml.node.toSql(ormConf)
-    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql(ormConf)
+    var result = "DELETE " + dml.node.alias + " FROM " + dml.node.toSql
+    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql
     result
   }
 }
 
-class OracleDialect(implicit ormConf: ORMConfiguration) extends Dialect {
+class OracleDialect extends Dialect {
   override def driverClass = "oracle.jdbc.driver.OracleDriver"
 
   override def fkNoAction = "SET_NULL"
@@ -114,7 +114,7 @@ class OracleDialect(implicit ormConf: ORMConfiguration) extends Dialect {
 
 }
 
-class DB2Dialect(implicit ormConf: ORMConfiguration) extends Dialect {
+class DB2Dialect extends Dialect {
   override def driverClass = "com.ibm.db2.jcc.DB2Driver"
 
   override def prepareStatement(conn: Connection, sql: String): PreparedStatement =
@@ -162,7 +162,7 @@ class DB2Dialect(implicit ormConf: ORMConfiguration) extends Dialect {
 
 }
 
-class MSSQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
+class MSSQLDialect extends Dialect {
   override def driverClass = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
 
   override def booleanType = "BIT"
@@ -188,7 +188,7 @@ class MSSQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
     result += "INDEX " + idx.name + " ON " + idx.relation.qualifiedName +
         " (" + idx.expression + ")"
     if (idx.whereClause != EmptyPredicate)
-      result += " WHERE " + idx.whereClause.toInlineSql(ormConf)
+      result += " WHERE " + idx.whereClause.toInlineSql
     result
   }
 
