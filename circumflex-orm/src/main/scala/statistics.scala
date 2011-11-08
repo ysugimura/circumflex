@@ -48,12 +48,12 @@ class StatisticsManager {
   protected var _heaviestSql = ""
   def heaviestSql = _heaviestSql
 
-  def executeSql(q: SQLQuery[_]) {
+  def executeSql(q: SQLQuery[_])(implicit ormConf: ORMConfiguration) {
     synchronized {
       val t = q.executionTime
       if (t > _heaviestSqlTime) {
         _heaviestSqlTime = t
-        _heaviestSql = q.toInlineSql
+        _heaviestSql = q.toInlineSql(ormConf)
       }
     }
   }
@@ -64,12 +64,12 @@ class StatisticsManager {
   protected var _heaviestDml = ""
   def heaviestDml = _heaviestDml
 
-  def executeDml(q: DMLQuery) {
+  def executeDml(q: DMLQuery)(implicit ormConf: ORMConfiguration) {
     synchronized {
       val t = q.executionTime
       if (t > _heaviestDmlTime) {
         _heaviestDmlTime = t
-        _heaviestDml = q.toInlineSql
+        _heaviestDml = q.toInlineSql(ormConf)
       }
     }
   }

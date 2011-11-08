@@ -16,7 +16,7 @@ After that, set the `orm.dialect` configuration parameter accordingly.
 
   [psql]: http://postgresql.org
 */
-class Dialect {
+class Dialect(implicit ormConf: ORMConfiguration) {
 
   def driverClass: String =
     throw new ORMException("Missing mandatory configuration parameter 'orm.connection.driver'.")
@@ -143,17 +143,17 @@ class Dialect {
   def qualifyColumn(vh: ValueHolder[_, _], tableAlias: String) =
     tableAlias + "." + vh.name
 
-  def on(expression: Expression) = "ON (" + expression.toInlineSql + ")"
+  def on(expression: Expression) = "ON (" + expression.toInlineSql(ormConf) + ")"
 
   def not(expression: String) = "NOT (" + expression + ")"
 
   def subquery(expression: String, subquery: SQLQuery[_]) =
-    expression + " ( " + subquery.toSql + " )"
+    expression + " ( " + subquery.toSql(ormConf) + " )"
 
   /*!## Data Definition Language */
 
   def constraintDefinition(constraint: Constraint) =
-    "CONSTRAINT " + constraint.constraintName + " " + constraint.sqlDefinition
+    "CONSTRAINT " + constraint.constraintName + " " + constraint.sqlDefinition(ormConf)
 
   def alterTable(rel: Relation[_, _], action: String) =
     "ALTER TABLE " + rel.qualifiedName + " " + action
@@ -170,7 +170,7 @@ class Dialect {
 
   def createTable[PK, R <: Record[PK, R]](table: Table[PK, R]) =
     "CREATE TABLE " + table.qualifiedName + " (" +
-        table.fields.map(_.toSql).mkString(", ") +
+        table.fields.map(_.toSql(ormConf)).mkString(", ") +
         ", PRIMARY KEY (" + table.PRIMARY_KEY.name + "))"
 
   def dropTable[PK, R <: Record[PK, R]](table: Table[PK, R]) =
@@ -179,7 +179,7 @@ class Dialect {
   def createView[PK, R <: Record[PK, R]](view: View[PK, R]) =
     "CREATE VIEW " + view.qualifiedName + " (" +
         view.fields.map(_.name).mkString(", ") + ") AS " +
-        view.query.toInlineSql
+        view.query.toInlineSql(ormConf)
 
   def dropView[PK, R <: Record[PK, R]](view: View[PK, R]) =
     "DROP VIEW " + view.qualifiedName
@@ -190,7 +190,7 @@ class Dialect {
     result += "INDEX " + idx.name + " ON " + idx.relation.qualifiedName +
         " USING " + idx.usingClause + " (" + idx.expression + ")"
     if (idx.whereClause != EmptyPredicate)
-      result += " WHERE " + idx.whereClause.toInlineSql
+      result += " WHERE " + idx.whereClause.toInlineSql(ormConf)
     result
   }
 
@@ -215,8 +215,8 @@ class Dialect {
       val seqName = sequenceName(f)
       val seq = new SchemaObject {
         val objectName = "SEQUENCE " + seqName
-        val sqlDrop = "DROP SEQUENCE " + seqName
-        val sqlCreate = "CREATE SEQUENCE " + seqName
+        def sqlDrop(ormConf: ORMConfiguration) = "DROP SEQUENCE " + seqName
+        def sqlCreate(ormConf: ORMConfiguration) = "CREATE SEQUENCE " + seqName
       }
       f.record.relation.addPreAux(seq)
     }
@@ -242,8 +242,8 @@ class Dialect {
     "FOREIGN KEY (" + fk.childColumns.map(_.name).mkString(", ") +
         ") REFERENCES " + fk.parentRelation.qualifiedName + " (" +
         fk.parentColumns.map(_.name).mkString(", ") + ") " +
-        "ON DELETE " + fk.onDelete.toSql + " " +
-        "ON UPDATE " + fk.onUpdate.toSql
+        "ON DELETE " + fk.onDelete.toSql(ormConf) + " " +
+        "ON UPDATE " + fk.onUpdate.toSql(ormConf)
 
   def checkConstraintDefinition(check: CheckConstraint) =
     "CHECK (" + check.expression + ")"
@@ -257,10 +257,10 @@ class Dialect {
     node match {
       case j: JoinNode[_, _, _, _] =>
         result += joinInternal(j.left, on) +
-            " " + j.joinType.toSql + " " +
+            " " + j.joinType.toSql(ormConf) + " " +
             joinInternal(j.right, j.sqlOn)
       case _ =>
-        result += node.toSql
+        result += node.toSql(ormConf)
         if (on != null) result += " " + on
     }
     result
@@ -270,22 +270,22 @@ class Dialect {
     var result = "SELECT "
     if (q.isDistinct)
       result += "DISTINCT "
-    result += q.projections.map(_.toSql).mkString(", ")
+    result += q.projections.map(_.toSql(ormConf)).mkString(", ")
     if (q.fromClause.size > 0)
-      result += " FROM " + q.fromClause.map(_.toSql).mkString(", ")
+      result += " FROM " + q.fromClause.map(_.toSql(ormConf)).mkString(", ")
     if (q.whereClause != EmptyPredicate)
-      result += " WHERE " + q.whereClause.toSql
+      result += " WHERE " + q.whereClause.toSql(ormConf)
     if (q.groupByClause != "")
       result += " GROUP BY " + q.groupByClause
     if (q.havingClause != EmptyPredicate)
-      result += " HAVING " + q.havingClause.toSql
+      result += " HAVING " + q.havingClause.toSql(ormConf)
     q.setOps.foreach {
       case (op: SetOperation, subq: SQLQuery[_]) =>
-        result += " " + op.toSql + " ( " + subq.toSql + " )"
+        result += " " + op.toSql(ormConf) + " ( " + subq.toSql(ormConf) + " )"
       case _ =>
     }
     if (q.orderByClause.size > 0)
-      result += " ORDER BY " + q.orderByClause.map(_.toSql).mkString(", ")
+      result += " ORDER BY " + q.orderByClause.map(_.toSql(ormConf)).mkString(", ")
     if (q.limit > -1)
       result += " LIMIT " + q.limit
     if (q.offset > 0)
@@ -315,18 +315,18 @@ class Dialect {
 
   def insertSelect[PK, R <: Record[PK, R]](dml: InsertSelect[PK, R]) =
     "INSERT INTO " + dml.relation.qualifiedName + " (" +
-        dml.relation.fields.map(_.name).mkString(", ") + ") " + dml.query.toSql
+        dml.relation.fields.map(_.name).mkString(", ") + ") " + dml.query.toSql(ormConf)
 
   def update[PK, R <: Record[PK, R]](dml: Update[PK, R]): String = {
-    var result = "UPDATE " + dml.node.toSql + " SET " +
+    var result = "UPDATE " + dml.node.toSql(ormConf) + " SET " +
         dml.setClause.map(f => f._1.name + " = " + f._1.placeholder).mkString(", ")
-    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql
+    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql(ormConf)
     result
   }
 
   def delete[PK, R <: Record[PK, R]](dml: Delete[PK, R]): String = {
-    var result = "DELETE FROM " + dml.node.toSql
-    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql
+    var result = "DELETE FROM " + dml.node.toSql(ormConf)
+    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql(ormConf)
     result
   }
 

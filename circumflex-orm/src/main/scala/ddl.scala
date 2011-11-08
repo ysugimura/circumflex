@@ -1,7 +1,7 @@
 package ru.circumflex
 package orm
-
 import core._
+
 import java.io.File
 import java.lang.IllegalStateException
 import org.apache.commons.io.FileUtils
@@ -88,49 +88,49 @@ class DDLUnit {
     this
   }
 
-  protected def dropObjects(objects: Seq[SchemaObject]) {
+  protected def dropObjects(objects: Seq[SchemaObject])(implicit ormConf: ORMConfiguration) {
     objects.reverse.foreach { o =>
-      tx.execute(o.sqlDrop, { st =>
+      tx.execute(o.sqlDrop(ormConf), { st =>
         st.executeUpdate()
         _msgs ++= List(new Msg(
           "orm.ddl.info",
           "status" -> ("DROP " + o.objectName + ": OK"),
-          "sql" -> o.sqlDrop))
+          "sql" -> o.sqlDrop(ormConf)))
       }, { e =>
         _msgs ++= List(new Msg(
           "orm.ddl.info",
           "status" -> ("DROP " + o.objectName + ": " + e.getMessage),
-          "sql" -> o.sqlDrop,
+          "sql" -> o.sqlDrop(ormConf),
           "error" -> e.getMessage))
       })
     }
   }
 
-  protected def createObjects(objects: Seq[SchemaObject]) {
+  protected def createObjects(objects: Seq[SchemaObject])(implicit ormConf: ORMConfiguration) {
     objects.foreach { o =>
-      tx.execute(o.sqlCreate, { st =>
+      tx.execute(o.sqlCreate(ormConf), { st =>
         st.executeUpdate()
         _msgs ++= List(new Msg(
           "orm.ddl.info",
           "status" -> ("CREATE " + o.objectName + ": OK"),
-          "sql" -> o.sqlCreate))
+          "sql" -> o.sqlCreate(ormConf)))
       }, { e =>
         _msgs ++= List(new Msg(
           "orm.ddl.error",
           "status" -> ("CREATE " + o.objectName + ": " + e.getMessage),
-          "sql" -> o.sqlCreate,
+          "sql" -> o.sqlCreate(ormConf),
           "error" -> e.getMessage))
       })
     }
   }
 
-  def DROP(): this.type = {
+  def DROP()(implicit ormConf: ORMConfiguration): this.type = {
     resetMsgs()
     _drop()
     this
   }
 
-  def _drop() {
+  def _drop()(implicit ormConf: ORMConfiguration) {
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -149,13 +149,13 @@ class DDLUnit {
     }, { throw _ })
   }
 
-  def CREATE(): this.type = {
+  def CREATE()(implicit ormConf: ORMConfiguration): this.type = {
     resetMsgs()
     _create()
     this
   }
 
-  def _create() {
+  def _create()(implicit ormConf: ORMConfiguration) {
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -173,7 +173,7 @@ class DDLUnit {
     }, { throw _ })
   }
 
-  def DROP_CREATE(): this.type = {
+  def DROP_CREATE()(implicit ormConf: ORMConfiguration): this.type = {
     resetMsgs()
     _drop()
     _create()

@@ -1,6 +1,5 @@
 package ru.circumflex
 
-import core._
 import collection.mutable.Stack
 import java.util.regex.Pattern
 
@@ -103,8 +102,8 @@ package object orm {
     new AggregatePredicateHelper(predicates.head).AND(predicates.tail: _*)
   def OR(predicates: Predicate*) =
     new AggregatePredicateHelper(predicates.head).OR(predicates.tail: _*)
-  def NOT(predicate: Predicate) =
-    new SimpleExpression(ormConf.dialect.not(predicate.toSql), predicate.parameters)
+  def NOT(predicate: Predicate)(implicit ormConf: ORMConfiguration) =
+    new SimpleExpression(ormConf.dialect.not(predicate.toSql(ormConf)), predicate.parameters)
 
   def prepareExpr(expression: String, params: Pair[String, Any]*): SimpleExpression = {
     var sqlText = expression
@@ -125,27 +124,27 @@ package object orm {
 
   // Simple subqueries DSL
 
-  def EXISTS(subquery: SQLQuery[_]) =
+  def EXISTS(subquery: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
     new SubqueryExpression(ormConf.dialect.EXISTS, subquery)
-  def NOT_EXISTS(subquery: SQLQuery[_]) =
+  def NOT_EXISTS(subquery: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
     new SubqueryExpression(ormConf.dialect.NOT_EXISTS, subquery)
 
   // Simple projections
 
   def expr[T](expression: String): ExpressionProjection[T] =
     new ExpressionProjection[T](expression)
-  def COUNT(expr: Expression): Projection[Long] =
-    new ExpressionProjection[Long](ormConf.dialect.COUNT(expr.toSql))
-  def COUNT_DISTINCT(expr: Expression): Projection[Long] =
-    new ExpressionProjection[Long](ormConf.dialect.COUNT_DISTINCT(expr.toSql))
-  def MAX[T](expr: Expression) =
-    new ExpressionProjection[T](ormConf.dialect.MAX(expr.toSql))
-  def MIN[T](expr: Expression) =
-    new ExpressionProjection[T](ormConf.dialect.MIN(expr.toSql))
-  def SUM[T](expr: Expression) =
-    new ExpressionProjection[T](ormConf.dialect.SUM(expr.toSql))
-  def AVG[T](expr: Expression) =
-    new ExpressionProjection[T](ormConf.dialect.AVG(expr.toSql))
+  def COUNT(expr: Expression)(implicit ormConf: ORMConfiguration): Projection[Long] =
+    new ExpressionProjection[Long](ormConf.dialect.COUNT(expr.toSql(ormConf)))
+  def COUNT_DISTINCT(expr: Expression)(implicit ormConf: ORMConfiguration): Projection[Long] =
+    new ExpressionProjection[Long](ormConf.dialect.COUNT_DISTINCT(expr.toSql(ormConf)))
+  def MAX[T](expr: Expression)(implicit ormConf: ORMConfiguration) =
+    new ExpressionProjection[T](ormConf.dialect.MAX(expr.toSql(ormConf)))
+  def MIN[T](expr: Expression)(implicit ormConf: ORMConfiguration) =
+    new ExpressionProjection[T](ormConf.dialect.MIN(expr.toSql(ormConf)))
+  def SUM[T](expr: Expression)(implicit ormConf: ORMConfiguration) =
+    new ExpressionProjection[T](ormConf.dialect.SUM(expr.toSql(ormConf)))
+  def AVG[T](expr: Expression)(implicit ormConf: ORMConfiguration) =
+    new ExpressionProjection[T](ormConf.dialect.AVG(expr.toSql(ormConf)))
 
   // Queries DSL
 

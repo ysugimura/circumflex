@@ -2,7 +2,6 @@ package ru.circumflex
 package orm
 
 import java.sql.{ResultSet, PreparedStatement}
-import core._
 
 /*!# Querying
 
@@ -35,7 +34,7 @@ trait Query extends SQLable with Expression with Cloneable {
 
   // Named parameters
 
-  def setParams(st: PreparedStatement, index: Int): Int = {
+  def setParams(st: PreparedStatement, index: Int)(implicit ormConf: ORMConfiguration): Int = {
     var paramsCounter = index;
     parameters.foreach(p => {
       ormConf.typeConverter.write(st, convertNamedParam(p), paramsCounter)
@@ -67,7 +66,8 @@ trait Query extends SQLable with Expression with Cloneable {
 
   override def clone(): this.type = super.clone.asInstanceOf[this.type]
 
-  override def toString = toSql
+  //TODO override def toString = toSql
+  override def toString = throw new Exception("NOT SUPPORTED")
 }
 
 /*! The `SQLQuery` trait defines a contract for data-retrieval queries.
@@ -93,9 +93,9 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
 
   // Query execution
 
-  def resultSet[A](actions: ResultSet => A): A = {
+  def resultSet[A](actions: ResultSet => A)(implicit ormConf: ORMConfiguration): A = {
     val result = time {
-      tx.execute(toSql, { st =>
+      tx.execute(toSql(ormConf), { st =>
         setParams(st, 1)
         val rs = st.executeQuery()
         try {
@@ -112,7 +112,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
 
   def read(rs: ResultSet): Option[T] = projection.read(rs)
 
-  def list(): Seq[T] = resultSet { rs =>
+  def list()(implicit ormConf: ORMConfiguration): Seq[T] = resultSet { rs =>
     var result = List[T]()
     while (rs.next) read(rs) match {
       case Some(r) =>
@@ -122,7 +122,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
     result
   }
 
-  def unique(): Option[T] = resultSet(rs => {
+  def unique()(implicit ormConf: ORMConfiguration): Option[T] = resultSet(rs => {
     if (!rs.next)
       None
     else if (rs.isLast)
@@ -138,7 +138,7 @@ class NativeSQLQuery[T](projection: Projection[T],
                         expression: Expression)
     extends SQLQuery[T](projection) {
   def parameters = expression.parameters
-  def toSql = expression.toSql.replaceAll("\\{\\*\\}", projection.toSql)
+  def toSql(ormConf: ORMConfiguration) = expression.toSql(ormConf).replaceAll("\\{\\*\\}", projection.toSql(ormConf))
 }
 
 /*! `SearchQuery` represents a query with a `WHERE` clause. */
@@ -316,16 +316,16 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
 
   // Miscellaneous
 
-  def toSql = ormConf.dialect.select(this)
+  def toSql(ormConf: ORMConfiguration) = ormConf.dialect.select(this)
 
 }
 
 /*! The `DMLQuery` trait defines a contract for data-manipulation queries. */
 trait DMLQuery extends Query {
 
-  def execute(): Int = {
+  def execute()(implicit ormConf: ORMConfiguration): Int = {
     val result = time {
-      tx.execute(toSql, { st =>
+      tx.execute(toSql(ormConf), { st =>
         setParams(st, 1)
         st.executeUpdate()
       }, { throw _ })
@@ -338,14 +338,14 @@ trait DMLQuery extends Query {
 
 class NativeDMLQuery(expression: Expression) extends DMLQuery {
   def parameters = expression.parameters
-  def toSql = expression.toSql
+  def toSql(ormConf: ORMConfiguration)= expression.toSql(ormConf)
 }
 
 class Insert[PK, R <: Record[PK, R]](val relation: Relation[PK, R],
                                      val fields: Seq[Field[_, R]])
     extends DMLQuery {
   def parameters = fields.map(_.value)
-  def toSql: String = ormConf.dialect.insert(this)
+  def toSql(ormConf: ORMConfiguration): String = ormConf.dialect.insert(this)
 }
 
 class InsertSelect[PK, R <: Record[PK, R]](val relation: Relation[PK, R],
@@ -354,7 +354,7 @@ class InsertSelect[PK, R <: Record[PK, R]](val relation: Relation[PK, R],
   if (relation.isReadOnly)
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
   def parameters = query.parameters
-  def toSql: String = ormConf.dialect.insertSelect(this)
+  def toSql(ormConf: ORMConfiguration): String = ormConf.dialect.insertSelect(this)
 }
 
 class InsertSelectHelper[PK, R <: Record[PK, R]](val relation: Relation[PK, R]) {
@@ -368,7 +368,7 @@ class Delete[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
 
   def parameters = _where.parameters
-  def toSql: String = ormConf.dialect.delete(this)
+  def toSql(ormConf: ORMConfiguration): String = ormConf.dialect.delete(this)
 }
 
 class Update[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
@@ -393,7 +393,7 @@ class Update[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
     SET_NULL(association.field)
 
   def parameters = _setClause.map(_._2) ++ _where.parameters
-  def toSql: String = ormConf.dialect.update(this)
+  def toSql(ormConf: ORMConfiguration): String = ormConf.dialect.update(this)
 
 }
 

@@ -1,7 +1,7 @@
 package ru.circumflex
 package orm
-
 import core._
+
 import java.lang.reflect.Method
 
 /*!# Relations
@@ -95,11 +95,11 @@ trait Relation[PK, R <: Record[PK, R]]
     * `get` retrieves a record either from cache or from database by specified `id`;
     * `all` retrieves all records.
    */
-  def get(id: PK): Option[R] =
+  def get(id: PK)(implicit ormConf: ORMConfiguration): Option[R] =
     tx.cache.cacheRecord(id, this,
       (this.AS("root")).map(r => r.criteria.add(r.PRIMARY_KEY EQ id).unique()))
 
-  def all: Seq[R] = this.AS("root").criteria.list()
+  def all(implicit ormConf: ORMConfiguration): Seq[R] = this.AS("root").criteria.list()
 
   /*!## Metadata
 
@@ -197,9 +197,9 @@ trait Relation[PK, R <: Record[PK, R]]
     }
   }
 
-  def copyFields(src: R, dst: R) {
+  def copyFields(src: R, dst: R)(implicit ormConf: ORMConfiguration) {
     fields.foreach { f =>
-        val value = getField(src, f.asInstanceOf[Field[Any, R]]).value
+        val value = getField(src, f.asInstanceOf[Field[Any, R]]).value(ormConf)
         getField(dst, f.asInstanceOf[Field[Any, R]]).set(value)
     }
   }
@@ -333,15 +333,15 @@ trait Relation[PK, R <: Record[PK, R]]
     case _ => false
   }
 
-  override def refresh(): Nothing =
+  override def refresh()(implicit ormConf: ORMConfiguration): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
   override def validate(): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def INSERT_!(fields: Field[_, R]*): Nothing =
+  override def INSERT_!(fields: Field[_, R]*)(implicit ormConf: ORMConfiguration): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def UPDATE_!(fields: Field[_, R]*): Nothing =
+  override def UPDATE_!(fields: Field[_, R]*)(implicit ormConf: ORMConfiguration): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def DELETE_!(): Nothing =
+  override def DELETE_!()(implicit ormConf: ORMConfiguration): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
 }
 
@@ -385,11 +385,11 @@ override the `isReadOnly` method accordingly.
 trait View[PK, R <: Record[PK, R]] extends Relation[PK, R] { this: R =>
   def isReadOnly: Boolean = true
   def objectName: String = "VIEW " + qualifiedName
-  def sqlDrop: String = {
+  def sqlDrop(implicit ormConf: ORMConfiguration): String = {
     init()
     ormConf.dialect.dropView(this)
   }
-  def sqlCreate: String = {
+  def sqlCreate(implicit ormConf: ORMConfiguration): String = {
     init()
     ormConf.dialect.createView(this)
   }

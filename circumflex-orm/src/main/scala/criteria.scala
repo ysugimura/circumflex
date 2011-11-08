@@ -196,7 +196,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     case r: RelationNode[PK, R] => _rootTree
   }
 
-  def list(): Seq[R] = {
+  def list()(implicit ormConf: ORMConfiguration): Seq[R] = {
     val q = mkSelect()
     val result = q.resultSet { rs =>
       var result: Seq[R] = Nil
@@ -212,7 +212,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     result
   }
 
-  def unique(): Option[R] = {
+  def unique()(implicit ormConf: ORMConfiguration): Option[R] = {
     val q = mkSelect()
     val result = q.resultSet { rs =>
       if (!rs.next) None     // none records found
@@ -237,7 +237,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     result
   }
 
-  def toSql = mkSelect().toSql
+  def toSql(ormConf: ORMConfiguration) = mkSelect().toSql(ormConf)
 
   override def toString = queryPlan.toString
 

@@ -21,8 +21,8 @@ Circumflex ORM also uses some helpers to make DSL-style data definition.
 */
 class Schema(val name: String) extends SchemaObject {
   def objectName = "SCHEMA " + name
-  def sqlCreate = ormConf.dialect.createSchema(this)
-  def sqlDrop = ormConf.dialect.dropSchema(this)
+  def sqlCreate(ormConf: ORMConfiguration) = ormConf.dialect.createSchema(this)
+  def sqlDrop(ormConf: ORMConfiguration) = ormConf.dialect.dropSchema(this)
 }
 
 abstract class Constraint(val constraintName: String,
@@ -30,20 +30,21 @@ abstract class Constraint(val constraintName: String,
     extends SchemaObject with SQLable {
 
   def objectName = "CONSTRAINT " + constraintName
-  def sqlCreate = ormConf.dialect.alterTableAddConstraint(this)
-  def sqlDrop = ormConf.dialect.alterTableDropConstraint(this)
-  def toSql = ormConf.dialect.constraintDefinition(this)
+  def sqlCreate(ormConf: ORMConfiguration) = ormConf.dialect.alterTableAddConstraint(this)
+  def sqlDrop(ormConf: ORMConfiguration) = ormConf.dialect.alterTableDropConstraint(this)
+  def toSql(ormConf: ORMConfiguration) = ormConf.dialect.constraintDefinition(this)
 
-  def sqlDefinition: String
+  def sqlDefinition(ormConf: ORMConfiguration): String
 
-  override def toString = toSql
+  //TODO override def toString = toSql
+  override def toString = throw new Exception("NOT SUPPORTED")
 }
 
 class UniqueKey(name: String,
                 relation: Relation[_, _],
                 val columns: Seq[ValueHolder[_, _]])
     extends Constraint(name, relation) {
-  def sqlDefinition = ormConf.dialect.uniqueKeyDefinition(this)
+  def sqlDefinition(ormConf: ORMConfiguration) = ormConf.dialect.uniqueKeyDefinition(this)
 }
 
 class ForeignKey(name: String,
@@ -67,14 +68,14 @@ class ForeignKey(name: String,
     this
   }
 
-  def sqlDefinition = ormConf.dialect.foreignKeyDefinition(this)
+  def sqlDefinition(ormConf: ORMConfiguration) = ormConf.dialect.foreignKeyDefinition(this)
 }
 
 class CheckConstraint(name: String,
                       relation: Relation[_, _],
                       val expression: String)
     extends Constraint(name, relation) {
-  def sqlDefinition = ormConf.dialect.checkConstraintDefinition(this)
+  def sqlDefinition(ormConf: ORMConfiguration) = ormConf.dialect.checkConstraintDefinition(this)
 }
 
 class Index(val name: String,
@@ -104,8 +105,8 @@ class Index(val name: String,
   }
 
   def objectName = "INDEX " + name
-  def sqlCreate = ormConf.dialect.createIndex(this)
-  def sqlDrop = ormConf.dialect.dropIndex(this)
+  def sqlCreate(ormConf: ORMConfiguration) = ormConf.dialect.createIndex(this)
+  def sqlDrop(ormConf: ORMConfiguration) = ormConf.dialect.dropIndex(this)
 }
 
 class ConstraintHelper(name: String, relation: Relation[_, _]) {
@@ -158,16 +159,22 @@ class DefinitionHelper[R <: Record[_, R]](name: String, record: R) {
   def INDEX(expression: String) = new Index(name, record.relation, expression)
 }
 
-case class ForeignKeyAction(toSql: String) extends SQLable {
-  override def toString = toSql
+case class ForeignKeyAction(_toSql: String) extends SQLable {
+  override def toSql(ormConf: ORMConfiguration): String = _toSql;
+  // TODO override def toString = toSql
+  override def toString: String = throw new Exception("NOT YET")
 }
 
-case class JoinType(toSql: String) extends SQLable {
-  override def toString = toSql
+case class JoinType(_toSql: String) extends SQLable {
+  override def toSql(ormConf: ORMConfiguration): String = _toSql;
+  // TODO override def toString = toSql
+  override def toString: String = throw new Exception("NOT YET")
 }
 
-case class SetOperation(toSql: String) extends SQLable {
-  override def toString = toSql
+case class SetOperation(_toSql: String) extends SQLable {
+  override def toSql(ormConf: ORMConfiguration): String = _toSql;
+  // TODO override def toString = toSql
+  override def toString: String = throw new Exception("NOT YET")
 }
 
 class Order(val expression: String, val parameters: Seq[Any])
@@ -181,5 +188,5 @@ class Order(val expression: String, val parameters: Seq[Any])
     this._specificator = ormConf.dialect.desc
     this
   }
-  def toSql = expression + " " + _specificator
+  def toSql(ormConf: ORMConfiguration) = expression + " " + _specificator
 }

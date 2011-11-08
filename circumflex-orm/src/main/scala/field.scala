@@ -1,7 +1,7 @@
 package ru.circumflex
 package orm
 
-import core._
+
 import java.util.Date
 import xml._
 import java.sql.ResultSet
@@ -22,7 +22,7 @@ class Field[T, R <: Record[_, R]](
 
   def uuid = record.getClass.getName + "." + name
 
-  def toSql: String = ormConf.dialect.columnDefinition(this)
+  def toSql(ormConf: ORMConfiguration): String = ormConf.dialect.columnDefinition(this)
 
   def read(rs: ResultSet, alias: String): Option[T] = {
     val o = rs.getObject(alias)
@@ -81,55 +81,55 @@ class Field[T, R <: Record[_, R]](
   */
   def GT(value: T): Predicate =
     new SimpleExpression(ormConf.dialect.GT(aliasedName, placeholder), List(value))
-  def GT(col: ColumnExpression[_, _]): Predicate =
-    new SimpleExpression(ormConf.dialect.GT(aliasedName, col.toSql), Nil)
+  def GT(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
+    new SimpleExpression(ormConf.dialect.GT(aliasedName, col.toSql(ormConf)), Nil)
   def GE(value: T): Predicate =
     new SimpleExpression(ormConf.dialect.GE(aliasedName, placeholder), List(value))
-  def GE(col: ColumnExpression[_, _]): Predicate =
-    new SimpleExpression(ormConf.dialect.GE(aliasedName, col.toSql), Nil)
+  def GE(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
+    new SimpleExpression(ormConf.dialect.GE(aliasedName, col.toSql(ormConf)), Nil)
   def LT(value: T): Predicate =
     new SimpleExpression(ormConf.dialect.LT(aliasedName, placeholder), List(value))
-  def LT(col: ColumnExpression[_, _]): Predicate =
-    new SimpleExpression(ormConf.dialect.LT(aliasedName, col.toSql), Nil)
+  def LT(col: ColumnExpression[_, _])(ormConf: ORMConfiguration): Predicate =
+    new SimpleExpression(ormConf.dialect.LT(aliasedName, col.toSql(ormConf)), Nil)
   def LE(value: T): Predicate =
     new SimpleExpression(ormConf.dialect.LE(aliasedName, placeholder), List(value))
-  def LE(col: ColumnExpression[_, _]): Predicate =
-    new SimpleExpression(ormConf.dialect.LE(aliasedName, col.toSql), Nil)
+  def LE(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
+    new SimpleExpression(ormConf.dialect.LE(aliasedName, col.toSql(ormConf)), Nil)
 
   def IN(params: Seq[T]): Predicate =
     new SimpleExpression(ormConf.dialect.parameterizedIn(aliasedName, params.map(p => placeholder)), params.toList)
   def BETWEEN(lowerValue: T, upperValue: T) =
     new SimpleExpression(ormConf.dialect.BETWEEN(aliasedName, placeholder, placeholder), List(lowerValue, upperValue))
 
-  def IN(query: SQLQuery[_]): Predicate =
+  def IN(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.IN(aliasedName), query)
-  def NOT_IN(query: SQLQuery[_]): Predicate =
+  def NOT_IN(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.NOT_IN(aliasedName), query)
 
-  def EQ_ALL(query: SQLQuery[_]): Predicate =
+  def EQ_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.EQ(aliasedName, ormConf.dialect.ALL), query)
-  def NE_ALL(query: SQLQuery[_]): Predicate =
+  def NE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.NE(aliasedName, ormConf.dialect.ALL), query)
-  def GT_ALL(query: SQLQuery[_]): Predicate =
+  def GT_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.GT(aliasedName, ormConf.dialect.ALL), query)
-  def GE_ALL(query: SQLQuery[_]): Predicate =
+  def GE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.GE(aliasedName, ormConf.dialect.ALL), query)
-  def LT_ALL(query: SQLQuery[_]): Predicate =
+  def LT_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.LT(aliasedName, ormConf.dialect.ALL), query)
-  def LE_ALL(query: SQLQuery[_]): Predicate =
+  def LE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.LE(aliasedName, ormConf.dialect.ALL), query)
 
-  def EQ_SOME(query: SQLQuery[_]): Predicate =
+  def EQ_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.EQ(aliasedName, ormConf.dialect.SOME), query)
-  def NE_SOME(query: SQLQuery[_]): Predicate =
+  def NE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.NE(aliasedName, ormConf.dialect.SOME), query)
-  def GT_SOME(query: SQLQuery[_]): Predicate =
+  def GT_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.GT(aliasedName, ormConf.dialect.SOME), query)
-  def GE_SOME(query: SQLQuery[_]): Predicate =
+  def GE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.GE(aliasedName, ormConf.dialect.SOME), query)
-  def LT_SOME(query: SQLQuery[_]): Predicate =
+  def LT_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.LT(aliasedName, ormConf.dialect.SOME), query)
-  def LE_SOME(query: SQLQuery[_]): Predicate =
+  def LE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.LE(aliasedName, ormConf.dialect.SOME), query)
 
 }
@@ -198,12 +198,12 @@ class TextField[R <: Record[_, R]](name: String, record: R, sqlType: String)
   def fromString(str: String): Option[String] =
     if (str == "") None else Some(str)
 
-  def LIKE(value: String) = new SimpleExpression(ormConf.dialect.LIKE(aliasedName, placeholder), List(value))
+  def LIKE(value: String)(implicit ormConf: ORMConfiguration) = new SimpleExpression(ormConf.dialect.LIKE(aliasedName, placeholder), List(value))
   def LIKE(col: ColumnExpression[String, _]) =
-    new SimpleExpression(ormConf.dialect.LIKE(aliasedName, col.toSql), Nil)
+    new SimpleExpression(ormConf.dialect.LIKE(aliasedName, col.toSql(ormConf)), Nil)
   def ILIKE(value: String) = new SimpleExpression(ormConf.dialect.ILIKE(aliasedName, placeholder), List(value))
-  def ILIKE(col: ColumnExpression[String, _]) =
-    new SimpleExpression(ormConf.dialect.ILIKE(aliasedName, col.toSql), Nil)
+  def ILIKE(col: ColumnExpression[String, _])(implicit ormConf: ORMConfiguration) =
+    new SimpleExpression(ormConf.dialect.ILIKE(aliasedName, col.toSql(ormConf)), Nil)
 }
 
 class BooleanField[R <: Record[_, R]](name: String, record: R)

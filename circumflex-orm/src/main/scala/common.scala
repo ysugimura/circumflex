@@ -1,14 +1,14 @@
 package ru.circumflex
 package orm
 
-import core._
 
 /*!# SQLable & Expression
 
 Every object capable of rendering itself into an SQL statement
 should extend the `SQLable` trait.*/
 trait SQLable {
-  def toSql: String
+  // Should accept ormConf
+  def toSql(ormConf: ORMConfiguration): String
 }
 
 /*!# Parameterized expressions
@@ -20,27 +20,31 @@ trait Expression extends SQLable {
 
   def parameters: Seq[Any]
 
-  def toInlineSql: String = parameters.foldLeft(toSql)((sql, p) =>
+  def toInlineSql(ormConf: ORMConfiguration): String = parameters.foldLeft(toSql(ormConf))((sql, p) =>
     sql.replaceFirst("\\?", ormConf.dialect.escapeParameter(p)
         .replaceAll("\\\\", "\\\\\\\\")
         .replaceAll("\\$", "\\\\\\$")))
 
+  /*TODO
   override def equals(that: Any) = that match {
     case e: Expression =>
       e.toSql == this.toSql && e.parameters.toList == this.parameters.toList
     case _ => false
   }
-
+  */
+  override def equals(that: Any) = throw new Exception("NOT SUPPORTED")
+  
   override def hashCode = 0
 
-  override def toString = toSql
+//TODO  override def toString = toSql
+  override def toString = throw new Exception("NOT SUPPORTED")
 }
 
 object Expression {
-  implicit def toPredicate(expression: Expression): Predicate =
-      new SimpleExpression(expression.toSql, expression.parameters)
-  implicit def toProjection[T](expression: Expression): Projection[T] =
-    new ExpressionProjection[T](expression.toSql)
+  implicit def toPredicate(expression: Expression)(implicit ormConf: ORMConfiguration): Predicate =
+      new SimpleExpression(expression.toSql(ormConf), expression.parameters)
+  implicit def toProjection[T](expression: Expression)(implicit ormConf: ORMConfiguration): Projection[T] =
+    new ExpressionProjection[T](expression.toSql(ormConf))
 }
 
 /*!# Schema Object
@@ -50,9 +54,9 @@ implement the `SchemaObject` trait.
 */
 trait SchemaObject {
 
-  def sqlCreate: String
+  def sqlCreate(ormConf: ORMConfiguration): String
 
-  def sqlDrop: String
+  def sqlDrop(ormConf: ORMConfiguration): String
 
   def objectName: String
 
@@ -168,12 +172,12 @@ trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option
 
   def EQ(value: T): Predicate =
     new SimpleExpression(ormConf.dialect.EQ(aliasedName, placeholder), List(value))
-  def EQ(col: ColumnExpression[_, _]): Predicate =
-    new SimpleExpression(ormConf.dialect.EQ(aliasedName, col.toSql), Nil)
+  def EQ(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
+    new SimpleExpression(ormConf.dialect.EQ(aliasedName, col.toSql(ormConf)), Nil)
   def NE(value: T): Predicate =
     new SimpleExpression(ormConf.dialect.NE(aliasedName, placeholder), List(value))
-  def NE(col: ColumnExpression[_, _]): Predicate =
-    new SimpleExpression(ormConf.dialect.NE(aliasedName, col.toSql), Nil)
+  def NE(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
+    new SimpleExpression(ormConf.dialect.NE(aliasedName, col.toSql(ormConf)), Nil)
   def IS_NULL: Predicate =
     new SimpleExpression(ormConf.dialect.IS_NULL(aliasedName), Nil)
   def IS_NOT_NULL: Predicate =
@@ -193,5 +197,5 @@ object ValueHolder {
 class ColumnExpression[T, R <: Record[_, R]](column: ValueHolder[T, R])
     extends Expression {
   def parameters = Nil
-  val toSql = column.aliasedName
+  def toSql(ormConf: ORMConfiguration) = column.aliasedName
 }

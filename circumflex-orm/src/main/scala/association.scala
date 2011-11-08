@@ -1,7 +1,6 @@
 package ru.circumflex
 package orm
 
-import core._
 
 /*!# Association
 
@@ -43,12 +42,11 @@ class Association[K, C <: Record[_, C], P <: Record[K, P]] (
   }
 
   // State maintenance
-
-  override def value: Option[P] =
-    field.value.flatMap(id => parentRelation.get(id))
-
+  override def value(ormConf: ORMConfiguration): Option[P] =
+    field.value(ormConf).flatMap(id => parentRelation.get(id))
+  
   override def set(v: Option[P]): this.type = {
-    field.set(v.flatMap(_.PRIMARY_KEY.value))
+    field.set(v.flatMap(_.PRIMARY_KEY.value(ormConf)))
     this
   }
 
@@ -80,17 +78,17 @@ whole hierarchy of associated records in a single SQL `SELECT`.
 */
 trait InverseAssociation[K, C <: Record[_, C], P <: Record[K, P], T]
     extends Wrapper[T] {
-  def item: T = get
+  def item(implicit ormConf: ORMConfiguration): T = get
   def association: Association[K, C, P]
   def record: P
-  def fetch(): Seq[C] = if (record.isTransient) Nil
+  def fetch()(implicit ormConf: ORMConfiguration): Seq[C] = if (record.isTransient) Nil
   else tx.cache.cacheInverse(record.PRIMARY_KEY(), association, {
     val root = association.field.record.relation AS "root"
     aliasStack.push(root.alias)
     SELECT(root.*).FROM(root).WHERE(association.field EQ record.PRIMARY_KEY()).list()
   })
-  def get: T
-  def apply: T = get
+  def get(implicit ormConf: ORMConfiguration): T
+  def apply(implicit ormConf: ORMConfiguration): T = get
 
   override def equals(that: Any): Boolean = that match {
     case that: InverseAssociation[_, _, _, _] =>
@@ -103,13 +101,13 @@ trait InverseAssociation[K, C <: Record[_, C], P <: Record[K, P], T]
 class InverseMany[K, C <: Record[_, C], P <: Record[K, P]](
         val record: P, val association: Association[K, C, P])
     extends InverseAssociation[K, C, P, Seq[C]] {
-  def get: Seq[C] = fetch()
+  def get(implicit ormConf: ORMConfiguration): Seq[C] = fetch()
 }
 
 class InverseOne[K, C <: Record[_, C], P <: Record[K, P]](
         val record: P, val association: Association[K, C, P])
     extends InverseAssociation[K, C, P, Option[C]] {
-  def get: Option[C] = {
+  def get(implicit ormConf: ORMConfiguration): Option[C] = {
     val children = fetch()
     if (children.size <= 0) return None
     if (children.size > 1)

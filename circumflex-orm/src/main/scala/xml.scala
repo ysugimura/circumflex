@@ -1,8 +1,10 @@
 package ru.circumflex
 package orm
+import core._
 
 import xml._
 import java.io.File
+
 
 /*!# XML (de)serialization
 
@@ -33,7 +35,7 @@ class Deployment(val id: String,
                  val validate: Boolean = true,
                  val entries: Seq[Node]) {
 
-  def process() {
+  def process()(implicit ormConf: ORMConfiguration) {
     try {
       entries.foreach(e => processNode(e, Nil))
       COMMIT()
@@ -46,7 +48,7 @@ class Deployment(val id: String,
 
   protected def processNode[R <: Record[Any, R]](
       node: Node,
-      parentPath: Seq[Pair[Association[_, _, _], Record[_, _]]]): Record[Any, R] = {
+      parentPath: Seq[Pair[Association[_, _, _], Record[_, _]]])(implicit ormConf: ORMConfiguration): Record[Any, R] = {
     val cl = pickClass(node)
     var r = cl.newInstance.asInstanceOf[R]
     var update = false
@@ -68,7 +70,7 @@ class Deployment(val id: String,
     // In first place, we set provided parents
     parentPath.foreach { p =>
       if (r.relation.fields.contains(p._1.field))
-        r.relation.getField(r, p._1.field.asInstanceOf[Field[Any, R]]).set(p._2.PRIMARY_KEY.value)
+        r.relation.getField(r, p._1.field.asInstanceOf[Field[Any, R]]).set(p._2.PRIMARY_KEY.value(ormConf))
     }
     var foreigns: Seq[Pair[Association[_, _, _], Node]] = Nil
     // Secondly, we set fields provided via attributes
@@ -86,7 +88,7 @@ class Deployment(val id: String,
               val newNode = Elem(null, a.parentRelation.recordClass.getSimpleName, n.attributes, n.scope)
               Some(processNode(newNode, newPath))
             } else n.child.find(_.isInstanceOf[Elem]).map(n => processNode(n, newPath))
-            r.relation.getField(r, a.field).set(parent.map(_.PRIMARY_KEY.value))
+            r.relation.getField(r, a.field).set(parent.map(_.PRIMARY_KEY.value(ormConf)))
           case m if (classOf[InverseAssociation[_, _, _, _]].isAssignableFrom(m.getReturnType)) =>
             val a = m.invoke(r).asInstanceOf[InverseAssociation[Any, R, R, Any]].association
             foreigns ++= n.child.filter(_.isInstanceOf[Elem]).map(n => (a -> n))
@@ -178,7 +180,7 @@ object Deployment {
 }
 
 class DeploymentHelper(f: File) {
-  def loadData() {
+  def loadData()(implicit ormConf: ORMConfiguration) {
     Deployment.readAll(XML.loadFile(f)).foreach(_.process())
   }
 }

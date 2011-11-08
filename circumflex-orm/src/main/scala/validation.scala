@@ -51,7 +51,7 @@ class RecordValidator[PK, R <: Record[PK, R]] {
     else None
   }
 
-  def unique[T](f: R => Field[T, R], key: String = "unique"): this.type = add { r =>
+  def unique[T](f: R => Field[T, R], key: String = "unique")(implicit ormConf: ORMConfiguration): this.type = add { r =>
     val field = f(r)
     r.relation.criteria.add(field EQ field()).unique() match {
       case Some(a) if (r.isTransient || a != r) =>
@@ -60,7 +60,7 @@ class RecordValidator[PK, R <: Record[PK, R]] {
     }
   }
 
-  def uniqueAll(f: R => Seq[Field[_, R]], key: String = "unique"): this.type = add { r =>
+  def uniqueAll(f: R => Seq[Field[_, R]], key: String = "unique")(implicit ormConf: ORMConfiguration): this.type = add { r =>
     val fields = f(r)
     val crit = r.relation.criteria
     fields.foreach {
