@@ -364,11 +364,11 @@ records.
 trait Table[PK, R <: Record[PK, R]] extends Relation[PK, R] { this: R =>
   def isReadOnly: Boolean = false
   def objectName: String = "TABLE " + qualifiedName
-  def sqlCreate: String = {
+  override def sqlCreate()(implicit ormConf: ORMConfiguration): String = {
     init()
     ormConf.dialect.createTable(this)
   }
-  def sqlDrop: String = {
+  override def sqlDrop()(implicit ormConf: ORMConfiguration): String = {
     init()
     ormConf.dialect.dropTable(this)
   }
@@ -385,11 +385,11 @@ override the `isReadOnly` method accordingly.
 trait View[PK, R <: Record[PK, R]] extends Relation[PK, R] { this: R =>
   def isReadOnly: Boolean = true
   def objectName: String = "VIEW " + qualifiedName
-  def sqlDrop: String = {
+  override def sqlDrop()(implicit ormConf: ORMConfiguration): String = {
     init()
     ormConf.dialect.dropView(this)
   }
-  def sqlCreate: String = {
+  override def sqlCreate()(implicit ormConf: ORMConfiguration): String = {
     init()
     ormConf.dialect.createView(this)
   }

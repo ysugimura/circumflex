@@ -262,7 +262,7 @@ traits. Following identity generators are supported out-of-box:
 */
 trait Generator[PK, R <: Record[PK, R]] extends Record[PK, R] { this: R =>
   override protected def _persist(fields: scala.Seq[Field[_, R]])(implicit ormConf: ORMConfiguration): Int = persist(fields)
-  def persist(fields: Seq[Field[_, R]]): Int
+  def persist(fields: Seq[Field[_, R]])(implicit ormConf: ORMConfiguration): Int
   override def save_!()(implicit ormConf: ORMConfiguration): Int = if (isTransient) INSERT_!() else UPDATE_!()
 }
 

@@ -1,8 +1,8 @@
 package circumflex_orm_only
 
-/*
+
 import ru.circumflex.orm._
-import ru.circumflex.core._
+
 
 
 class Country extends Record[String, Country] {
@@ -30,7 +30,7 @@ class City extends Record[Long, City] with SequenceGenerator[Long, City] {
 
 object City extends City with Table[Long, City]
 
-*/
+
 
 object Creation {
 
