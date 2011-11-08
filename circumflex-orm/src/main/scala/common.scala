@@ -8,7 +8,7 @@ import core._
 Every object capable of rendering itself into an SQL statement
 should extend the `SQLable` trait.*/
 trait SQLable {
-  def toSql: String
+  def toSql()(implicit ormConf: ORMConfiguration): String
 }
 
 /*!# Parameterized expressions
@@ -18,28 +18,32 @@ with SQL expressions with JDBC-style parameters.
 */
 trait Expression extends SQLable {
 
-  def parameters: Seq[Any]
+  def parameters()(implicit ormConf: ORMConfiguration): Seq[Any]
 
-  def toInlineSql: String = parameters.foldLeft(toSql)((sql, p) =>
+  def toInlineSql()(implicit ormConf: ORMConfiguration): String = parameters.foldLeft(toSql)((sql, p) =>
     sql.replaceFirst("\\?", ormConf.dialect.escapeParameter(p)
         .replaceAll("\\\\", "\\\\\\\\")
         .replaceAll("\\$", "\\\\\\$")))
 
+  /* TODO
   override def equals(that: Any) = that match {
     case e: Expression =>
       e.toSql == this.toSql && e.parameters.toList == this.parameters.toList
     case _ => false
   }
-
+  */
+  override def equals(that: Any): Boolean = throw new Exception
+        
   override def hashCode = 0
 
-  override def toString = toSql
+  // TODO override def toString = toSql
+  override def toString: String = throw new Exception
 }
 
 object Expression {
-  implicit def toPredicate(expression: Expression): Predicate =
+  implicit def toPredicate(expression: Expression)(implicit ormConf: ORMConfiguration): Predicate =
       new SimpleExpression(expression.toSql, expression.parameters)
-  implicit def toProjection[T](expression: Expression): Projection[T] =
+  implicit def toProjection[T](expression: Expression)(implicit ormConf: ORMConfiguration): Projection[T] =
     new ExpressionProjection[T](expression.toSql)
 }
 
@@ -50,9 +54,9 @@ implement the `SchemaObject` trait.
 */
 trait SchemaObject {
 
-  def sqlCreate: String
+  def sqlCreate()(implicit ormConf: ORMConfiguration): String
 
-  def sqlDrop: String
+  def sqlDrop()(implicit ormConf: ORMConfiguration): String
 
   def objectName: String
 
@@ -74,7 +78,7 @@ identifying and manipulating data fields inside persistent records.
 trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option[T]] {
   def name: String
   def record: R
-  def item = value
+  def item()(implicit ormConf: ORMConfiguration) = value
 
   /*!## Setters
 
@@ -161,22 +165,22 @@ trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option
 
   More specific predicates can be acquired from subclasses.
   */
-  def aliasedName = aliasStack.pop() match {
+  def aliasedName()(implicit ormConf: ORMConfiguration) = aliasStack.pop() match {
     case Some(alias: String) => alias + "." + name
     case _ => name
   }
 
-  def EQ(value: T): Predicate =
+  def EQ(value: T)(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.EQ(aliasedName, placeholder), List(value))
-  def EQ(col: ColumnExpression[_, _]): Predicate =
+  def EQ(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.EQ(aliasedName, col.toSql), Nil)
-  def NE(value: T): Predicate =
+  def NE(value: T)(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.NE(aliasedName, placeholder), List(value))
-  def NE(col: ColumnExpression[_, _]): Predicate =
+  def NE(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.NE(aliasedName, col.toSql), Nil)
-  def IS_NULL: Predicate =
+  def IS_NULL()(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.IS_NULL(aliasedName), Nil)
-  def IS_NOT_NULL: Predicate =
+  def IS_NOT_NULL()(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.IS_NOT_NULL(aliasedName), Nil)
 
 }
@@ -184,14 +188,14 @@ trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option
 object ValueHolder {
   implicit def toColExpr[T, R <: Record[_, R]](vh: ValueHolder[T, R]): ColumnExpression[T, R] =
     new ColumnExpression(vh)
-  implicit def toOrder(vh: ValueHolder[_, _]): Order =
+  implicit def toOrder(vh: ValueHolder[_, _])(implicit ormConf: ORMConfiguration): Order =
     new Order(vh.aliasedName, Nil)
-  implicit def toProjection[T](vh: ValueHolder[T, _]): Projection[T] =
+  implicit def toProjection[T](vh: ValueHolder[T, _])(implicit ormConf: ORMConfiguration): Projection[T] =
     new ExpressionProjection[T](vh.aliasedName)
 }
 
 class ColumnExpression[T, R <: Record[_, R]](column: ValueHolder[T, R])
     extends Expression {
-  def parameters = Nil
-  val toSql = column.aliasedName
+  def parameters()(implicit ormConf: ORMConfiguration): Seq[Any] = Nil
+  def toSql()(implicit ormConf: ORMConfiguration) = column.aliasedName
 }

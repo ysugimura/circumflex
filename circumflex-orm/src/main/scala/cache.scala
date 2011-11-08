@@ -72,7 +72,7 @@ trait CacheService {
     evictInverse(parentId, association)
     cacheInverse(parentId, association, children)
   }
-  def evictInverse[K, P <: Record[K, P]](parent: P)
+  def evictInverse[K, P <: Record[K, P]](parent: P)(implicit ormConf: ORMConfiguration)
 
 }
 
@@ -153,7 +153,7 @@ class DefaultCacheService extends CacheService {
     _inverseCache(association).remove(parentId)
   }
   def evictInverse[K, P <: Record[K, P]](
-      parent: P) {
+      parent: P)(implicit ormConf: ORMConfiguration) {
     _inverseCache.keys.foreach {
       case a: Association[K, _, P] =>
         if (a.parentRelation == parent.relation)
@@ -173,6 +173,7 @@ modification of such records is a subject for concurrency control.
 */
 trait Cacheable[PK, R <: Record[PK, R]] extends Relation[PK, R] { this: R =>
 
+  implicit val ormConf: ORMConfiguration = null; // TODO
   def cacheName = ormConf.prefix(":") + qualifiedName
 
   def ehcache: Ehcache = ru.circumflex.cache.ehcacheManager

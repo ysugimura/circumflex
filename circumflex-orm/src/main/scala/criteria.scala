@@ -86,7 +86,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     }
 
   protected def processTupleTree[PKN, N <: Record[PKN, N]](
-      tuple: Array[_], tree: RelationNode[PKN, N]) {
+      tuple: Array[_], tree: RelationNode[PKN, N])(implicit ormConf: ORMConfiguration) {
     tree match {
       case j: OneToManyJoin[PKN, N, PKN, N] =>
         val pNode = j.left
@@ -118,7 +118,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     _restrictions ++= predicates.toList
     this
   }
-  def add(expression: String, params: Pair[String, Any]*): Criteria[PK, R] =
+  def add(expression: String, params: Pair[String, Any]*)(implicit ormConf: ORMConfiguration): Criteria[PK, R] =
     add(prepareExpr(expression, params: _*))
 
   def addOrder(orders: Order*): Criteria[PK, R] = {
@@ -196,7 +196,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     case r: RelationNode[PK, R] => _rootTree
   }
 
-  def list(): Seq[R] = {
+  def list()(implicit ormConf: ORMConfiguration): Seq[R] = {
     val q = mkSelect()
     val result = q.resultSet { rs =>
       var result: Seq[R] = Nil
@@ -212,7 +212,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     result
   }
 
-  def unique(): Option[R] = {
+  def unique()(implicit ormConf: ORMConfiguration): Option[R] = {
     val q = mkSelect()
     val result = q.resultSet { rs =>
       if (!rs.next) None     // none records found
@@ -237,7 +237,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     result
   }
 
-  def toSql = mkSelect().toSql
+  def toSql()(implicit ormConf: ORMConfiguration) = mkSelect().toSql
 
   override def toString = queryPlan.toString
 
@@ -294,13 +294,13 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
   rules are applied as with criteria merging, except that the criteria object with
   proper restrictions is created from the inverse association implicitly.
   */
-  protected def merge(inverse: InverseAssociation[_, R, _, _], operator: String): Criteria[PK, R] = {
+  protected def merge(inverse: InverseAssociation[_, R, _, _], operator: String)(implicit ormConf: ORMConfiguration): Criteria[PK, R] = {
     val criteria = new Criteria[PK, R](rootNode)
     aliasStack.push(rootNode.alias)
     criteria.add(inverse.association.asInstanceOf[Association[_, _, R]] IS inverse.record.asInstanceOf[R])
     merge(criteria, operator)
   }
-  def AND(inverse: InverseAssociation[_, R, _, _]): Criteria[PK, R] = merge(inverse, ormConf.dialect.AND)
-  def OR(inverse: InverseAssociation[_, R, _, _]): Criteria[PK, R] = merge(inverse, ormConf.dialect.OR)
+  def AND(inverse: InverseAssociation[_, R, _, _])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(inverse, ormConf.dialect.AND)
+  def OR(inverse: InverseAssociation[_, R, _, _])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(inverse, ormConf.dialect.OR)
 
 }

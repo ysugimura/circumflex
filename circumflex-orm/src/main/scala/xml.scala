@@ -33,7 +33,7 @@ class Deployment(val id: String,
                  val validate: Boolean = true,
                  val entries: Seq[Node]) {
 
-  def process() {
+  def process()(implicit ormConf: ORMConfiguration) {
     try {
       entries.foreach(e => processNode(e, Nil))
       COMMIT()
@@ -46,7 +46,7 @@ class Deployment(val id: String,
 
   protected def processNode[R <: Record[Any, R]](
       node: Node,
-      parentPath: Seq[Pair[Association[_, _, _], Record[_, _]]]): Record[Any, R] = {
+      parentPath: Seq[Pair[Association[_, _, _], Record[_, _]]])(implicit ormConf: ORMConfiguration): Record[Any, R] = {
     val cl = pickClass(node)
     var r = cl.newInstance.asInstanceOf[R]
     var update = false
@@ -115,7 +115,7 @@ class Deployment(val id: String,
     Class.forName(p + node.label, true, Thread.currentThread().getContextClassLoader)
   }
 
-  protected def setRecordField[R <: Record[_, R]](r: R, k: String, v: String) = {
+  protected def setRecordField[R <: Record[_, R]](r: R, k: String, v: String)(implicit ormConf: ORMConfiguration) = {
     val m = r.getClass.getMethod(k)
     if (classOf[Field[_, _]].isAssignableFrom(m.getReturnType)) {    // only scalar fields are accepted
       val field = m.invoke(r).asInstanceOf[Field[Any, R]]
@@ -124,7 +124,7 @@ class Deployment(val id: String,
     }
   }
 
-  protected def prepareCriteria[R <: Record[Any, R]](r: R, n: Node): Criteria[Any, R] = {
+  protected def prepareCriteria[R <: Record[Any, R]](r: R, n: Node)(implicit ormConf: ORMConfiguration): Criteria[Any, R] = {
     val crit = r.relation.AS("root").criteria
     n.attributes.foreach(a => {
       val k = a.key
@@ -178,7 +178,7 @@ object Deployment {
 }
 
 class DeploymentHelper(f: File) {
-  def loadData() {
+  def loadData()(implicit ormConf: ORMConfiguration) {
     Deployment.readAll(XML.loadFile(f)).foreach(_.process())
   }
 }

@@ -69,7 +69,7 @@ package object orm {
 
   // Pimping core libs
 
-  implicit def str2expr(str: String): Expression = prepareExpr(str)
+  implicit def str2expr(str: String)(implicit ormConf: ORMConfiguration): Expression = prepareExpr(str)
   implicit def string2exprHelper(expression: String): SimpleExpressionHelper =
     new SimpleExpressionHelper(expression)
   implicit def string2nativeHelper(expression: String): NativeQueryHelper =
@@ -103,10 +103,10 @@ package object orm {
     new AggregatePredicateHelper(predicates.head).AND(predicates.tail: _*)
   def OR(predicates: Predicate*) =
     new AggregatePredicateHelper(predicates.head).OR(predicates.tail: _*)
-  def NOT(predicate: Predicate) =
+  def NOT(predicate: Predicate)(implicit ormConf: ORMConfiguration) =
     new SimpleExpression(ormConf.dialect.not(predicate.toSql), predicate.parameters)
 
-  def prepareExpr(expression: String, params: Pair[String, Any]*): SimpleExpression = {
+  def prepareExpr(expression: String, params: Pair[String, Any]*)(implicit ormConf: ORMConfiguration): SimpleExpression = {
     var sqlText = expression
     var parameters: Seq[Any] = Nil
     val paramsMap = Map[String, Any](params: _*)
@@ -125,26 +125,26 @@ package object orm {
 
   // Simple subqueries DSL
 
-  def EXISTS(subquery: SQLQuery[_]) =
+  def EXISTS(subquery: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
     new SubqueryExpression(ormConf.dialect.EXISTS, subquery)
-  def NOT_EXISTS(subquery: SQLQuery[_]) =
+  def NOT_EXISTS(subquery: SQLQuery[_])(implicit ormConf: ORMConfiguration) =
     new SubqueryExpression(ormConf.dialect.NOT_EXISTS, subquery)
 
   // Simple projections
 
   def expr[T](expression: String): ExpressionProjection[T] =
     new ExpressionProjection[T](expression)
-  def COUNT(expr: Expression): Projection[Long] =
+  def COUNT(expr: Expression)(implicit ormConf: ORMConfiguration): Projection[Long] =
     new ExpressionProjection[Long](ormConf.dialect.COUNT(expr.toSql))
-  def COUNT_DISTINCT(expr: Expression): Projection[Long] =
+  def COUNT_DISTINCT(expr: Expression)(implicit ormConf: ORMConfiguration): Projection[Long] =
     new ExpressionProjection[Long](ormConf.dialect.COUNT_DISTINCT(expr.toSql))
-  def MAX[T](expr: Expression) =
+  def MAX[T](expr: Expression)(implicit ormConf: ORMConfiguration) =
     new ExpressionProjection[T](ormConf.dialect.MAX(expr.toSql))
-  def MIN[T](expr: Expression) =
+  def MIN[T](expr: Expression)(implicit ormConf: ORMConfiguration) =
     new ExpressionProjection[T](ormConf.dialect.MIN(expr.toSql))
-  def SUM[T](expr: Expression) =
+  def SUM[T](expr: Expression)(implicit ormConf: ORMConfiguration) =
     new ExpressionProjection[T](ormConf.dialect.SUM(expr.toSql))
-  def AVG[T](expr: Expression) =
+  def AVG[T](expr: Expression)(implicit ormConf: ORMConfiguration) =
     new ExpressionProjection[T](ormConf.dialect.AVG(expr.toSql))
 
   // Queries DSL

@@ -21,7 +21,7 @@ you only need to explicitly specify an expected type.
 */
 trait Projection[T] extends SQLable {
 
-  def read(rs: ResultSet): Option[T]
+  def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[T]
 
   def sqlAliases: Seq[String]
 
@@ -32,7 +32,8 @@ trait Projection[T] extends SQLable {
     this
   }
 
-  override def toString = toSql
+  // TODOoverride def toString = toSql
+  override def toString: String = throw new Exception
 }
 
 object Projection {
@@ -63,15 +64,15 @@ trait CompositeProjection[T] extends Projection[T] {
     _hash
   }
 
-  def toSql = subProjections.map(_.toSql).mkString(", ")
+  def toSql()(implicit ormConf: ORMConfiguration) = subProjections.map(_.toSql).mkString(", ")
 }
 
 class ExpressionProjection[T](val expression: String)
     extends AtomicProjection[T] {
 
-  def toSql = ormConf.dialect.alias(expression, alias)
+  def toSql()(implicit ormConf: ORMConfiguration) = ormConf.dialect.alias(expression, alias)
 
-  def read(rs: ResultSet): Option[T] = {
+  def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[T] = {
     val o = rs.getObject(alias)
     if (rs.wasNull) None
     else Some(o.asInstanceOf[T])
@@ -93,9 +94,9 @@ class FieldProjection[T, R <: Record[_, R]](
 
   def expression = ormConf.dialect.qualifyColumn(field, node.alias)
 
-  def toSql = ormConf.dialect.alias(expression, alias)
+  def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.alias(expression, alias)
 
-  def read(rs: ResultSet) = field.read(rs, alias)
+  def read(rs: ResultSet)(implicit ormConf: ORMConfiguration) = field.read(rs, alias)
 
   override def equals(obj: Any) = obj match {
     case p: FieldProjection[_, _] =>
@@ -114,7 +115,7 @@ class RecordProjection[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
 
   def subProjections = _fieldProjections
 
-  protected def _readCell[T](rs: ResultSet, vh: ValueHolder[T, R]): Option[T] = vh match {
+  protected def _readCell[T](rs: ResultSet, vh: ValueHolder[T, R])(implicit ormConf: ORMConfiguration): Option[T] = vh match {
     case f: Field[T, R] => _fieldProjections.find(_.field == f)
         .flatMap(_.asInstanceOf[Projection[T]].read(rs))
     case a: Association[T, R, _] => _readCell(rs, a.field)
@@ -124,10 +125,10 @@ class RecordProjection[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
     }
   }
 
-  def read(rs: ResultSet): Option[R] = _readCell(rs, node.relation.PRIMARY_KEY).flatMap(id =>
+  def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[R] = _readCell(rs, node.relation.PRIMARY_KEY).flatMap(id =>
     tx.cache.cacheRecord(id, node.relation, Some(readRecord(rs))))
 
-  protected def readRecord(rs: ResultSet): R = {
+  protected def readRecord(rs: ResultSet)(implicit ormConf: ORMConfiguration): R = {
     val record: R = node.relation.recordClass.newInstance
     _fieldProjections.foreach { p =>
       node.relation.getField(record, p.field.asInstanceOf[Field[Any, R]]).set(p.read(rs))
@@ -145,19 +146,19 @@ class RecordProjection[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
 
 class UntypedTupleProjection(val subProjections: Projection[_]*)
     extends CompositeProjection[Array[Option[Any]]] {
-  def read(rs: ResultSet): Option[Array[Option[Any]]] = Some(subProjections.map(_.read(rs)).toArray)
+  def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[Array[Option[Any]]] = Some(subProjections.map(_.read(rs)).toArray)
 }
 
 class PairProjection[T1, T2] (_1: Projection[T1], _2: Projection[T2])
     extends CompositeProjection[(Option[T1], Option[T2])] {
   def subProjections = List[Projection[_]](_1, _2)
-  def read(rs: ResultSet): Option[(Option[T1], Option[T2])] =
+  def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[(Option[T1], Option[T2])] =
     Some((_1.read(rs), _2.read(rs)))
 }
 
 class AliasMapProjection(val subProjections: Seq[Projection[_]])
     extends CompositeProjection[Map[String, Any]] {
-  def read(rs: ResultSet): Option[Map[String, Any]] = {
+  def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[Map[String, Any]] = {
     val pairs = subProjections.flatMap { p =>
       p.read(rs).map(v => p.alias -> v).asInstanceOf[Option[(String, Any)]]
     }

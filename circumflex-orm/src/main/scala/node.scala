@@ -102,11 +102,12 @@ class RelationNode[PK, R <: Record[PK, R]](val relation: Relation[PK, R])
       this.relation == that.relation
   }
 
-  def toSql: String = ormConf.dialect.alias(relation.qualifiedName, alias)
+  def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.alias(relation.qualifiedName, alias)
 
   override def clone(): this.type = super.clone.asInstanceOf[this.type]
 
-  override def toString: String = toSql
+  //TODO override def toString: String = toSql
+  override def toString: String = throw new Exception
 }
 
 /*!## Implicit Convertions
@@ -158,7 +159,7 @@ class ProxyNode[PK, R <: Record[PK, R]](var node: RelationNode[PK, R])
   override def equals(obj: Any) = node.equals(obj)
   override def hashCode = node.hashCode
 
-  override def toSql = node.toSql
+  override def toSql()(implicit ormConf: ORMConfiguration) = node.toSql
 
   override def clone(): this.type = {
     val newNode = super.clone().asInstanceOf[this.type]
@@ -193,13 +194,13 @@ class JoinNode[PKL, L <: Record[PKL, L], PKR, R <: Record[PKR, R]](
   def joinType = _joinType
 
   protected var _on: Expression = EmptyPredicate
-  def onClause = _on
+  def onClause()(implicit ormConf: ORMConfiguration) = _on
   def ON(expr: Expression): this.type = {
     _on = expr
     this
   }
 
-  def sqlOn = ormConf.dialect.on(this.onClause)
+  def sqlOn()(implicit ormConf: ORMConfiguration) = ormConf.dialect.on(this.onClause)
 
   override def projections = left.projections ++ right.projections
 
@@ -213,13 +214,13 @@ class JoinNode[PKL, L <: Record[PKL, L], PKR, R <: Record[PKR, R]](
     this
   }
 
-  override def toSql = ormConf.dialect.join(this)
+  override def toSql()(implicit ormConf: ORMConfiguration) = ormConf.dialect.join(this)
 
   override def clone(): this.type = super.clone()
       .replaceLeft(this.left.clone())
       .replaceRight(this.right.clone())
 
-  override def toString = "(" + left + " -> " + right + ")"
+  override def toString: String = "(" + left + " -> " + right + ")"
 
 }
 
@@ -228,7 +229,7 @@ class ManyToOneJoin[PKL, L <: Record[PKL, L], PKR, R <: Record[PKR, R]](
     parentNode: RelationNode[PKR, R],
     val association: Association[PKR, L, R],
     joinType: JoinType) extends JoinNode[PKL, L, PKR, R](childNode, parentNode, joinType) {
-  override def onClause =
+  override def onClause()(implicit ormConf: ORMConfiguration) =
     if (_on == EmptyPredicate)
       association.joinPredicate(childNode.alias, parentNode.alias)
     else _on
@@ -239,7 +240,7 @@ class OneToManyJoin[PKL, L <: Record[PKL, L], PKR, R <: Record[PKR, R]](
     childNode: RelationNode[PKR, R],
     val association: Association[PKL, R, L],
     joinType: JoinType) extends JoinNode[PKL, L, PKR, R](parentNode, childNode, joinType) {
-  override def onClause =
+  override def onClause()(implicit ormConf: ORMConfiguration) =
     if (_on == EmptyPredicate)
       association.joinPredicate(childNode.alias, parentNode.alias)
     else _on

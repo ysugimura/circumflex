@@ -35,10 +35,13 @@ class DDLUnit {
   def messages = _msgs
   def msgsArray: Array[Msg] = messages.toArray
 
+  /* TODO
   def this(objects: SchemaObject*) = {
     this()
     add(objects: _*)
   }
+  */
+  def this(objects: SchemaObject*) = { /* TODO */this }
 
   def resetMsgs(): this.type = {
     _msgs = Nil
@@ -55,12 +58,12 @@ class DDLUnit {
     resetMsgs()
   }
 
-  def add(objects: SchemaObject*): this.type = {
+  def add(objects: SchemaObject*)(implicit ormConf: ORMConfiguration): this.type = {
     objects.foreach(addObject(_))
     this
   }
 
-  def addObject(obj: SchemaObject): this.type = {
+  def addObject(obj: SchemaObject)(implicit ormConf: ORMConfiguration): this.type = {
     def processRelation(r: Relation[_, _]) {
       addObject(r.schema)
       r.preAux.foreach(o =>
@@ -88,7 +91,7 @@ class DDLUnit {
     this
   }
 
-  protected def dropObjects(objects: Seq[SchemaObject]) {
+  protected def dropObjects(objects: Seq[SchemaObject])(implicit ormConf: ORMConfiguration) {
     objects.reverse.foreach { o =>
       tx.execute(o.sqlDrop, { st =>
         st.executeUpdate()
@@ -106,7 +109,7 @@ class DDLUnit {
     }
   }
 
-  protected def createObjects(objects: Seq[SchemaObject]) {
+  protected def createObjects(objects: Seq[SchemaObject])(implicit ormConf: ORMConfiguration) {
     objects.foreach { o =>
       tx.execute(o.sqlCreate, { st =>
         st.executeUpdate()
@@ -124,13 +127,13 @@ class DDLUnit {
     }
   }
 
-  def DROP(): this.type = {
+  def DROP()(implicit ormConf: ORMConfiguration): this.type = {
     resetMsgs()
     _drop()
     this
   }
 
-  def _drop() {
+  def _drop()(implicit ormConf: ORMConfiguration) {
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -149,13 +152,13 @@ class DDLUnit {
     }, { throw _ })
   }
 
-  def CREATE(): this.type = {
+  def CREATE()(implicit ormConf: ORMConfiguration): this.type = {
     resetMsgs()
     _create()
     this
   }
 
-  def _create() {
+  def _create()(implicit ormConf: ORMConfiguration) {
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -173,7 +176,7 @@ class DDLUnit {
     }, { throw _ })
   }
 
-  def DROP_CREATE(): this.type = {
+  def DROP_CREATE()(implicit ormConf: ORMConfiguration): this.type = {
     resetMsgs()
     _drop()
     _create()
@@ -232,7 +235,7 @@ object DDLUnit {
     case _ => List(new File("target/classes"), new File("target/test-classes"))
   }
 
-  def fromClasspath(pkgPrefix: String = ""): DDLUnit = {
+  def fromClasspath(pkgPrefix: String = "")(implicit ormConf: ORMConfiguration): DDLUnit = {
     val loader = Thread.currentThread.getContextClassLoader
     val ddl = new DDLUnit()
     for (dir <- outputDirs) {

@@ -79,6 +79,7 @@ trait ORMConfigurationCx extends ORMConfiguration {
       .getOrElse(throw new ORMException(
     "Missing mandatory configuration parameter 'orm.connection.password'."))
 
+    /* TODO
   override lazy val dialect = cx.instantiate[Dialect]("orm.dialect", url match {
     case u if (u.startsWith("jdbc:postgresql:")) => new PostgreSQLDialect
     case u if (u.startsWith("jdbc:mysql:")) => new MySQLDialect
@@ -88,11 +89,17 @@ trait ORMConfigurationCx extends ORMConfiguration {
     case u if (u.startsWith("jdbc:db2:")) => new DB2Dialect
     case _ => new Dialect
   })
+  */
+    override def dialect = throw new Exception
 
+    /* TODO
   override lazy val driver = cx.get("orm.connection.driver") match {
     case Some(s: String) => s
     case _ => dialect.driverClass
   }
+  */
+    override def driver = throw new Exception
+    
 
   override lazy val isolation: Int = cx.get("orm.connection.isolation") match {
     case Some("none") => Connection.TRANSACTION_NONE

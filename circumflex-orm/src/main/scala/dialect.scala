@@ -16,7 +16,7 @@ After that, set the `orm.dialect` configuration parameter accordingly.
 
   [psql]: http://postgresql.org
 */
-class Dialect {
+class Dialect(implicit ormConf: ORMConfiguration) {
 
   def driverClass: String =
     throw new ORMException("Missing mandatory configuration parameter 'orm.connection.driver'.")
@@ -215,8 +215,8 @@ class Dialect {
       val seqName = sequenceName(f)
       val seq = new SchemaObject {
         val objectName = "SEQUENCE " + seqName
-        val sqlDrop = "DROP SEQUENCE " + seqName
-        val sqlCreate = "CREATE SEQUENCE " + seqName
+        override def sqlDrop()(implicit ormConf: ORMConfiguration) = "DROP SEQUENCE " + seqName
+        override def sqlCreate()(implicit ormConf: ORMConfiguration) = "CREATE SEQUENCE " + seqName
       }
       f.record.relation.addPreAux(seq)
     }

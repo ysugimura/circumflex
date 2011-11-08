@@ -17,20 +17,20 @@ class RecordValidator[PK, R <: Record[PK, R]] {
     this
   }
 
-  def addForTransient(validator: R => Option[Msg]): this.type =
+  def addForTransient(validator: R => Option[Msg])(implicit ormConf: ORMConfiguration): this.type =
     add(r => if (r.isTransient) validator(r) else None)
 
-  def addForPersisted(validator: R => Option[Msg]): this.type =
+  def addForPersisted(validator: R => Option[Msg])(implicit ormConf: ORMConfiguration): this.type =
     add(r => if (!r.isTransient) validator(r) else None)
 
-  def notNull(f: R => Field[_, R]): this.type = add { r =>
+  def notNull(f: R => Field[_, R])(implicit ormConf: ORMConfiguration): this.type = add { r =>
     val field = f(r)
     if (field.isEmpty)
       Some(new Msg(field.uuid + ".null", "record" -> r, "field" -> field))
     else None
   }
 
-  def notEmpty(f: R => TextField[R]): this.type = add { r =>
+  def notEmpty(f: R => TextField[R])(implicit ormConf: ORMConfiguration): this.type = add { r =>
     val field = f(r)
     if (field.isEmpty)
       Some(new Msg(field.uuid + ".null", "record" -> r, "field" -> field))
@@ -39,7 +39,7 @@ class RecordValidator[PK, R <: Record[PK, R]] {
     else None
   }
 
-  def pattern(f: R => TextField[R], regex: String, key: String = "pattern"): this.type = add { r =>
+  def pattern(f: R => TextField[R], regex: String, key: String = "pattern")(implicit ormConf: ORMConfiguration): this.type = add { r =>
     val field = f(r)
     if (field.isEmpty)
       None
@@ -51,7 +51,7 @@ class RecordValidator[PK, R <: Record[PK, R]] {
     else None
   }
 
-  def unique[T](f: R => Field[T, R], key: String = "unique"): this.type = add { r =>
+  def unique[T](f: R => Field[T, R], key: String = "unique")(implicit ormConf: ORMConfiguration): this.type = add { r =>
     val field = f(r)
     r.relation.criteria.add(field EQ field()).unique() match {
       case Some(a) if (r.isTransient || a != r) =>
@@ -60,7 +60,7 @@ class RecordValidator[PK, R <: Record[PK, R]] {
     }
   }
 
-  def uniqueAll(f: R => Seq[Field[_, R]], key: String = "unique"): this.type = add { r =>
+  def uniqueAll(f: R => Seq[Field[_, R]], key: String = "unique")(implicit ormConf: ORMConfiguration): this.type = add { r =>
     val fields = f(r)
     val crit = r.relation.criteria
     fields.foreach {

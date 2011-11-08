@@ -21,8 +21,8 @@ Circumflex ORM also uses some helpers to make DSL-style data definition.
 */
 class Schema(val name: String) extends SchemaObject {
   def objectName = "SCHEMA " + name
-  def sqlCreate = ormConf.dialect.createSchema(this)
-  def sqlDrop = ormConf.dialect.dropSchema(this)
+  def sqlCreate()(implicit ormConf: ORMConfiguration) = ormConf.dialect.createSchema(this)
+  def sqlDrop()(implicit ormConf: ORMConfiguration) = ormConf.dialect.dropSchema(this)
 }
 
 abstract class Constraint(val constraintName: String,
@@ -30,13 +30,14 @@ abstract class Constraint(val constraintName: String,
     extends SchemaObject with SQLable {
 
   def objectName = "CONSTRAINT " + constraintName
-  def sqlCreate = ormConf.dialect.alterTableAddConstraint(this)
-  def sqlDrop = ormConf.dialect.alterTableDropConstraint(this)
-  def toSql = ormConf.dialect.constraintDefinition(this)
+  def sqlCreate()(implicit ormConf: ORMConfiguration) = ormConf.dialect.alterTableAddConstraint(this)
+  def sqlDrop()(implicit ormConf: ORMConfiguration) = ormConf.dialect.alterTableDropConstraint(this)
+  def toSql()(implicit ormConf: ORMConfiguration) = ormConf.dialect.constraintDefinition(this)
 
   def sqlDefinition: String
 
-  override def toString = toSql
+  //TODO override def toString = toSql
+  override def toString: String = throw new Exception();
 }
 
 class UniqueKey(name: String,
@@ -104,8 +105,8 @@ class Index(val name: String,
   }
 
   def objectName = "INDEX " + name
-  def sqlCreate = ormConf.dialect.createIndex(this)
-  def sqlDrop = ormConf.dialect.dropIndex(this)
+  def sqlCreate()(implicit ormConf: ORMConfiguration) = ormConf.dialect.createIndex(this)
+  def sqlDrop()(implicit ormConf: ORMConfiguration) = ormConf.dialect.dropIndex(this)
 }
 
 class ConstraintHelper(name: String, relation: Relation[_, _]) {
@@ -158,28 +159,35 @@ class DefinitionHelper[R <: Record[_, R]](name: String, record: R) {
   def INDEX(expression: String) = new Index(name, record.relation, expression)
 }
 
-case class ForeignKeyAction(toSql: String) extends SQLable {
-  override def toString = toSql
+case class ForeignKeyAction(_toSql: String) extends SQLable {
+ //TODO override def toString = toSql
+  override def toSql()(implicit ormConf: ORMConfiguration) = _toSql;
+  override def toString: String = throw new Exception
 }
 
-case class JoinType(toSql: String) extends SQLable {
-  override def toString = toSql
+case class JoinType(_toSql: String) extends SQLable {
+   override def toSql()(implicit ormConf: ORMConfiguration) = _toSql;
+ //TODO override def toString = toSql
+   override def toString: String = throw new Exception
 }
 
-case class SetOperation(toSql: String) extends SQLable {
-  override def toString = toSql
+case class SetOperation(_toSql: String) extends SQLable {
+   override def toSql()(implicit ormConf: ORMConfiguration) = _toSql;
+ //TODO  override def toString = toSql
+   override def toString: String = throw new Exception
 }
 
-class Order(val expression: String, val parameters: Seq[Any])
+class Order(val expression: String, val _parameters: Seq[Any])
     extends Expression {
   protected var _specificator = ormConf.dialect.asc
-  def ASC: this.type = {
+  def parameters()(implicit ormConf: ORMConfiguration) = _parameters;
+  def ASC()(implicit ormConf: ORMConfiguration): this.type = {
     this._specificator = ormConf.dialect.asc
     this
   }
-  def DESC: this.type = {
+  def DESC()(implicit ormConf: ORMConfiguration): this.type = {
     this._specificator = ormConf.dialect.desc
     this
   }
-  def toSql = expression + " " + _specificator
+  def toSql()(implicit ormConf: ORMConfiguration) = expression + " " + _specificator
 }

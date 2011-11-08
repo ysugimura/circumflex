@@ -1,5 +1,5 @@
 package ru.circumflex
-package core
+package orm
 
 /*!# Data model support
 
@@ -9,7 +9,7 @@ these interfaces while view technologies should provide proper support
 for them.
 */
 trait Wrapper[T] {
-  def item: T
+  def item()(implicit ormConf: ORMConfiguration): T
 }
 
 /*!# Containers
@@ -45,21 +45,21 @@ trait Container[T] extends Equals {
   Values are stored internally as `Option[T]`. `None` stands both for
   uninitialized and `null` values.
   */
-  def value: Option[T] = _value
-  def get = value
-  def apply(): T = value.get
-  def getOrElse(default: => T): T = value.getOrElse(default)
-  def isEmpty: Boolean = value == None
+  def value()(implicit ormConf: ORMConfiguration): Option[T] = _value
+  def get()(implicit ormConf: ORMConfiguration) = value
+  def apply()(implicit ormConf: ORMConfiguration): T = value.get
+  def getOrElse(default: => T)(implicit ormConf: ORMConfiguration): T = value.getOrElse(default)
+  def isEmpty()(implicit ormConf: ORMConfiguration): Boolean = value == None
 
-  def set(v: Option[T]): this.type = {
+  def set(v: Option[T])(implicit ormConf: ORMConfiguration): this.type = {
     _value = v.map { v =>
       setters.foldLeft(v) { (v, f) => f(v) }
     }
     this
   }
-  def set(v: T): this.type = set(any2option(v))
-  def setNull(): this.type = set(None)
-  def :=(v: T) = set(v)
+  def set(v: T)(implicit ormConf: ORMConfiguration): this.type = set(core.any2option(v))
+  def setNull()(implicit ormConf: ORMConfiguration): this.type = set(None)
+  def :=(v: T)(implicit ormConf: ORMConfiguration) = set(v)
 
   /*!## Methods from `Option`
 
@@ -67,11 +67,11 @@ trait Container[T] extends Equals {
   some methods to work with your values in functional style
   (they delegate to their equivalents in `Option`).
   */
-  def map[B](f: T => B): Option[B] =
+  def map[B](f: T => B)(implicit ormConf: ORMConfiguration): Option[B] =
     value.map(f)
-  def flatMap[B](f: T => Option[B]): Option[B] =
+  def flatMap[B](f: T => Option[B])(implicit ormConf: ORMConfiguration): Option[B] =
     value.flatMap(f)
-  def orElse[B >: T](alternative: => Option[B]): Option[B] =
+  def orElse[B >: T](alternative: => Option[B])(implicit ormConf: ORMConfiguration): Option[B] =
     value.orElse(alternative)
 
 }

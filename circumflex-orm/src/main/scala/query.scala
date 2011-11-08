@@ -1,8 +1,8 @@
 package ru.circumflex
 package orm
+import core._
 
 import java.sql.{ResultSet, PreparedStatement}
-import core._
 
 /*!# Querying
 
@@ -35,7 +35,7 @@ trait Query extends SQLable with Expression with Cloneable {
 
   // Named parameters
 
-  def setParams(st: PreparedStatement, index: Int): Int = {
+  def setParams(st: PreparedStatement, index: Int)(implicit ormConf: ORMConfiguration): Int = {
     var paramsCounter = index;
     parameters.foreach(p => {
       ormConf.typeConverter.write(st, convertNamedParam(p), paramsCounter)
@@ -46,7 +46,7 @@ trait Query extends SQLable with Expression with Cloneable {
 
   protected var _namedParams: Map[String, Any] = Map()
 
-  def renderParams: Seq[Any] = parameters.map(p => convertNamedParam(p))
+  def renderParams()(implicit ormConf: ORMConfiguration): Seq[Any] = parameters.map(p => convertNamedParam(p))
 
   def set(name: String, value: Any): this.type = {
     _namedParams += name -> value
@@ -67,7 +67,8 @@ trait Query extends SQLable with Expression with Cloneable {
 
   override def clone(): this.type = super.clone.asInstanceOf[this.type]
 
-  override def toString = toSql
+  // TODO override def toString = toSql
+  override def toString: String = throw new Exception
 }
 
 /*! The `SQLQuery` trait defines a contract for data-retrieval queries.
@@ -93,7 +94,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
 
   // Query execution
 
-  def resultSet[A](actions: ResultSet => A): A = {
+  def resultSet[A](actions: ResultSet => A)(implicit ormConf: ORMConfiguration): A = {
     val result = time {
       tx.execute(toSql, { st =>
         setParams(st, 1)
@@ -110,9 +111,9 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
     result._2
   }
 
-  def read(rs: ResultSet): Option[T] = projection.read(rs)
+  def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[T] = projection.read(rs)
 
-  def list(): Seq[T] = resultSet { rs =>
+  def list()(implicit ormConf: ORMConfiguration): Seq[T] = resultSet { rs =>
     var result = List[T]()
     while (rs.next) read(rs) match {
       case Some(r) =>
@@ -122,7 +123,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
     result
   }
 
-  def unique(): Option[T] = resultSet(rs => {
+  def unique()(implicit ormConf: ORMConfiguration): Option[T] = resultSet(rs => {
     if (!rs.next)
       None
     else if (rs.isLast)
@@ -137,8 +138,8 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
 class NativeSQLQuery[T](projection: Projection[T],
                         expression: Expression)
     extends SQLQuery[T](projection) {
-  def parameters = expression.parameters
-  def toSql = expression.toSql.replaceAll("\\{\\*\\}", projection.toSql)
+  def parameters()(implicit ormConf: ORMConfiguration) = expression.parameters
+  def toSql()(implicit ormConf: ORMConfiguration) = expression.toSql.replaceAll("\\{\\*\\}", projection.toSql)
 }
 
 /*! `SearchQuery` represents a query with a `WHERE` clause. */
@@ -150,7 +151,7 @@ trait SearchQuery extends Query {
     this._where = predicate
     this
   }
-  def WHERE(expression: String, params: Pair[String,Any]*): this.type =
+  def WHERE(expression: String, params: Pair[String,Any]*)(implicit ormConf: ORMConfiguration): this.type =
     WHERE(prepareExpr(expression, params: _*))
 
   def add(predicates: Predicate*): this.type = {
@@ -164,7 +165,7 @@ trait SearchQuery extends Query {
     }
     this
   }
-  def add(expression: String, params: Pair[String, Any]*): this.type =
+  def add(expression: String, params: Pair[String, Any]*)(implicit ormConf: ORMConfiguration): this.type =
     add(prepareExpr(expression, params: _*))
 }
 
@@ -182,7 +183,7 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
   protected var _limit: Int = -1
   protected var _offset: Int = 0
 
-  def parameters: Seq[Any] = _where.parameters ++
+  def parameters()(implicit ormConf: ORMConfiguration): Seq[Any] = _where.parameters ++
       _having.parameters ++
       _setOps.flatMap(p => p._2.parameters) ++
       _orders.flatMap(_.parameters)
@@ -223,7 +224,7 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
     this._having = predicate
     this
   }
-  def HAVING(expression: String, params: Pair[String,Any]*): Select[T] =
+  def HAVING(expression: String, params: Pair[String,Any]*)(implicit ormConf: ORMConfiguration): Select[T] =
     HAVING(prepareExpr(expression, params: _*))
 
   // GROUP BY clause
@@ -316,14 +317,14 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
 
   // Miscellaneous
 
-  def toSql = ormConf.dialect.select(this)
+  def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.select(this)
 
 }
 
 /*! The `DMLQuery` trait defines a contract for data-manipulation queries. */
 trait DMLQuery extends Query {
 
-  def execute(): Int = {
+  def execute()(implicit ormConf: ORMConfiguration): Int = {
     val result = time {
       tx.execute(toSql, { st =>
         setParams(st, 1)
@@ -337,15 +338,15 @@ trait DMLQuery extends Query {
 }
 
 class NativeDMLQuery(expression: Expression) extends DMLQuery {
-  def parameters = expression.parameters
-  def toSql = expression.toSql
+  def parameters()(implicit ormConf: ORMConfiguration) = expression.parameters
+  def toSql()(implicit ormConf: ORMConfiguration) = expression.toSql
 }
 
 class Insert[PK, R <: Record[PK, R]](val relation: Relation[PK, R],
                                      val fields: Seq[Field[_, R]])
     extends DMLQuery {
-  def parameters = fields.map(_.value)
-  def toSql: String = ormConf.dialect.insert(this)
+  def parameters()(implicit ormConf: ORMConfiguration) = fields.map(_.value)
+  def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.insert(this)
 }
 
 class InsertSelect[PK, R <: Record[PK, R]](val relation: Relation[PK, R],
@@ -353,8 +354,8 @@ class InsertSelect[PK, R <: Record[PK, R]](val relation: Relation[PK, R],
     extends DMLQuery {
   if (relation.isReadOnly)
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
-  def parameters = query.parameters
-  def toSql: String = ormConf.dialect.insertSelect(this)
+  def parameters()(implicit ormConf: ORMConfiguration) = query.parameters
+  def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.insertSelect(this)
 }
 
 class InsertSelectHelper[PK, R <: Record[PK, R]](val relation: Relation[PK, R]) {
@@ -367,8 +368,8 @@ class Delete[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
   if (relation.isReadOnly)
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
 
-  def parameters = _where.parameters
-  def toSql: String = ormConf.dialect.delete(this)
+  def parameters()(implicit ormConf: ORMConfiguration) = _where.parameters
+  def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.delete(this)
 }
 
 class Update[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
@@ -383,7 +384,7 @@ class Update[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
     _setClause ++= List(field -> Some(value))
     this
   }
-  def SET[K, P <: Record[K, P]](association: Association[K, R, P], value: P): Update[PK, R]=
+  def SET[K, P <: Record[K, P]](association: Association[K, R, P], value: P)(implicit ormConf: ORMConfiguration): Update[PK, R]=
     SET(association.field.asInstanceOf[Field[Any, R]], value.PRIMARY_KEY.value)
   def SET_NULL[T](field: Field[T, R]): Update[PK, R] = {
     _setClause ++= List(field -> None)
@@ -392,8 +393,8 @@ class Update[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
   def SET_NULL[K, P <: Record[K, P]](association: Association[K, R, P]): Update[PK, R] =
     SET_NULL(association.field)
 
-  def parameters = _setClause.map(_._2) ++ _where.parameters
-  def toSql: String = ormConf.dialect.update(this)
+  def parameters()(implicit ormConf: ORMConfiguration) = _setClause.map(_._2) ++ _where.parameters
+  def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.update(this)
 
 }
 
@@ -424,7 +425,7 @@ And now let's take a look at the manipulation example.
     "UPDATE orm.country c SET c.code = c.code".toDml.execute()
 */
 class NativeQueryHelper(val expr: String) {
-  def toSql[T](projection: Projection[T]): NativeSQLQuery[T] =
+  def toSql[T](projection: Projection[T])(implicit ormConf: ORMConfiguration): NativeSQLQuery[T] =
     new NativeSQLQuery[T](projection, prepareExpr(expr))
-  def toDml: NativeDMLQuery = new NativeDMLQuery(prepareExpr(expr))
+  def toDml()(implicit ormConf: ORMConfiguration): NativeDMLQuery = new NativeDMLQuery(prepareExpr(expr))
 }

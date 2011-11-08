@@ -95,11 +95,11 @@ trait Relation[PK, R <: Record[PK, R]]
     * `get` retrieves a record either from cache or from database by specified `id`;
     * `all` retrieves all records.
    */
-  def get(id: PK): Option[R] =
+  def get(id: PK)(implicit ormConf: ORMConfiguration): Option[R] =
     tx.cache.cacheRecord(id, this,
       (this.AS("root")).map(r => r.criteria.add(r.PRIMARY_KEY EQ id).unique()))
 
-  def all: Seq[R] = this.AS("root").criteria.list()
+  def all()(implicit ormConf: ORMConfiguration): Seq[R] = this.AS("root").criteria.list()
 
   /*!## Metadata
 
@@ -197,7 +197,7 @@ trait Relation[PK, R <: Record[PK, R]]
     }
   }
 
-  def copyFields(src: R, dst: R) {
+  def copyFields(src: R, dst: R)(implicit ormConf: ORMConfiguration) {
     fields.foreach { f =>
         val value = getField(src, f.asInstanceOf[Field[Any, R]]).value
         getField(dst, f.asInstanceOf[Field[Any, R]]).set(value)
@@ -316,7 +316,7 @@ trait Relation[PK, R <: Record[PK, R]]
 
   Record-specific methods derived from `Record` throw an exception when invoked against relation.
   */
-  override def equals(that: Any) = that match {
+  override def equals(that: Any): Boolean = that match {
     case that: Relation[_, _] =>
       this.recordClass == that.recordClass &&
           this.relationName == that.relationName
@@ -333,15 +333,15 @@ trait Relation[PK, R <: Record[PK, R]]
     case _ => false
   }
 
-  override def refresh(): Nothing =
+  override def refresh()(implicit ormConf: ORMConfiguration): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
   override def validate(): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def INSERT_!(fields: Field[_, R]*): Nothing =
+  override def INSERT_!(fields: Field[_, R]*)(implicit ormConf: ORMConfiguration): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def UPDATE_!(fields: Field[_, R]*): Nothing =
+  override def UPDATE_!(fields: Field[_, R]*)(implicit ormConf: ORMConfiguration): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
-  override def DELETE_!(): Nothing =
+  override def DELETE_!()(implicit ormConf: ORMConfiguration): Nothing =
     throw new ORMException("This method cannot be invoked on relation instance.")
 }
 

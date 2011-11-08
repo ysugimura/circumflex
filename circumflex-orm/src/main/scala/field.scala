@@ -22,7 +22,7 @@ class Field[T, R <: Record[_, R]](
 
   def uuid = record.getClass.getName + "." + name
 
-  def toSql: String = ormConf.dialect.columnDefinition(this)
+  def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.columnDefinition(this)
 
   def read(rs: ResultSet, alias: String): Option[T] = {
     val o = rs.getObject(alias)
@@ -56,7 +56,7 @@ class Field[T, R <: Record[_, R]](
     _notNull = true
     this
   }
-  def NOT_NULL(initialValue: T): this.type = NOT_NULL.set(initialValue)
+  def NOT_NULL(initialValue: T)(implicit ormConf: ORMConfiguration): this.type = NOT_NULL.set(initialValue)
 
   protected var _unique: Boolean = false
   def isUnique: Boolean = _unique
@@ -79,57 +79,57 @@ class Field[T, R <: Record[_, R]](
 
   Simple expressions are used to compose predicates in a DSL-style.
   */
-  def GT(value: T): Predicate =
+  def GT(value: T)(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.GT(aliasedName, placeholder), List(value))
-  def GT(col: ColumnExpression[_, _]): Predicate =
+  def GT(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.GT(aliasedName, col.toSql), Nil)
-  def GE(value: T): Predicate =
+  def GE(value: T)(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.GE(aliasedName, placeholder), List(value))
-  def GE(col: ColumnExpression[_, _]): Predicate =
+  def GE(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.GE(aliasedName, col.toSql), Nil)
-  def LT(value: T): Predicate =
+  def LT(value: T)(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.LT(aliasedName, placeholder), List(value))
-  def LT(col: ColumnExpression[_, _]): Predicate =
+  def LT(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.LT(aliasedName, col.toSql), Nil)
-  def LE(value: T): Predicate =
+  def LE(value: T)(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.LE(aliasedName, placeholder), List(value))
-  def LE(col: ColumnExpression[_, _]): Predicate =
+  def LE(col: ColumnExpression[_, _])(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.LE(aliasedName, col.toSql), Nil)
 
-  def IN(params: Seq[T]): Predicate =
+  def IN(params: Seq[T])(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(ormConf.dialect.parameterizedIn(aliasedName, params.map(p => placeholder)), params.toList)
-  def BETWEEN(lowerValue: T, upperValue: T) =
+  def BETWEEN(lowerValue: T, upperValue: T)(implicit ormConf: ORMConfiguration) =
     new SimpleExpression(ormConf.dialect.BETWEEN(aliasedName, placeholder, placeholder), List(lowerValue, upperValue))
 
-  def IN(query: SQLQuery[_]): Predicate =
+  def IN(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.IN(aliasedName), query)
-  def NOT_IN(query: SQLQuery[_]): Predicate =
+  def NOT_IN(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.NOT_IN(aliasedName), query)
 
-  def EQ_ALL(query: SQLQuery[_]): Predicate =
+  def EQ_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.EQ(aliasedName, ormConf.dialect.ALL), query)
-  def NE_ALL(query: SQLQuery[_]): Predicate =
+  def NE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.NE(aliasedName, ormConf.dialect.ALL), query)
-  def GT_ALL(query: SQLQuery[_]): Predicate =
+  def GT_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.GT(aliasedName, ormConf.dialect.ALL), query)
-  def GE_ALL(query: SQLQuery[_]): Predicate =
+  def GE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.GE(aliasedName, ormConf.dialect.ALL), query)
-  def LT_ALL(query: SQLQuery[_]): Predicate =
+  def LT_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.LT(aliasedName, ormConf.dialect.ALL), query)
-  def LE_ALL(query: SQLQuery[_]): Predicate =
+  def LE_ALL(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.LE(aliasedName, ormConf.dialect.ALL), query)
 
-  def EQ_SOME(query: SQLQuery[_]): Predicate =
+  def EQ_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.EQ(aliasedName, ormConf.dialect.SOME), query)
-  def NE_SOME(query: SQLQuery[_]): Predicate =
+  def NE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.NE(aliasedName, ormConf.dialect.SOME), query)
-  def GT_SOME(query: SQLQuery[_]): Predicate =
+  def GT_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.GT(aliasedName, ormConf.dialect.SOME), query)
-  def GE_SOME(query: SQLQuery[_]): Predicate =
+  def GE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.GE(aliasedName, ormConf.dialect.SOME), query)
-  def LT_SOME(query: SQLQuery[_]): Predicate =
+  def LT_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.LT(aliasedName, ormConf.dialect.SOME), query)
-  def LE_SOME(query: SQLQuery[_]): Predicate =
+  def LE_SOME(query: SQLQuery[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SubqueryExpression(ormConf.dialect.LE(aliasedName, ormConf.dialect.SOME), query)
 
 }
@@ -198,11 +198,11 @@ class TextField[R <: Record[_, R]](name: String, record: R, sqlType: String)
   def fromString(str: String): Option[String] =
     if (str == "") None else Some(str)
 
-  def LIKE(value: String) = new SimpleExpression(ormConf.dialect.LIKE(aliasedName, placeholder), List(value))
-  def LIKE(col: ColumnExpression[String, _]) =
+  def LIKE(value: String)(implicit ormConf: ORMConfiguration) = new SimpleExpression(ormConf.dialect.LIKE(aliasedName, placeholder), List(value))
+  def LIKE(col: ColumnExpression[String, _])(implicit ormConf: ORMConfiguration) =
     new SimpleExpression(ormConf.dialect.LIKE(aliasedName, col.toSql), Nil)
-  def ILIKE(value: String) = new SimpleExpression(ormConf.dialect.ILIKE(aliasedName, placeholder), List(value))
-  def ILIKE(col: ColumnExpression[String, _]) =
+  def ILIKE(value: String)(implicit ormConf: ORMConfiguration) = new SimpleExpression(ormConf.dialect.ILIKE(aliasedName, placeholder), List(value))
+  def ILIKE(col: ColumnExpression[String, _])(implicit ormConf: ORMConfiguration) =
     new SimpleExpression(ormConf.dialect.ILIKE(aliasedName, col.toSql), Nil)
 }
 
@@ -213,7 +213,7 @@ class BooleanField[R <: Record[_, R]](name: String, record: R)
 }
 
 object BooleanField {
-  implicit def toPredicate(f: BooleanField[_]): Predicate =
+  implicit def toPredicate(f: BooleanField[_])(implicit ormConf: ORMConfiguration): Predicate =
     new SimpleExpression(f.aliasedName, Nil)
 }
 
@@ -266,12 +266,12 @@ class FieldComposition2[T1, T2, R <: Record[_, R]](val _1: Field[T1, R],
 
   def name = ormConf.dialect.compositeFieldName(_1.name, _2.name)
 
-  override def value: Option[(T1, T2)] = (_1.get, _2.get) match {
+  override def value()(implicit ormConf: ORMConfiguration): Option[(T1, T2)] = (_1.get, _2.get) match {
     case (Some(v1), Some(v2)) => Some(v1 -> v2)
     case _ => None
   }
 
-  override def set(v: Option[(T1, T2)]): this.type = {
+  override def set(v: Option[(T1, T2)])(implicit ormConf: ORMConfiguration): this.type = {
     v match {
       case Some(Pair(v1, v2)) =>
         _1.set(v1)
@@ -285,27 +285,27 @@ class FieldComposition2[T1, T2, R <: Record[_, R]](val _1: Field[T1, R],
 
   protected def _getPrefix = aliasStack.pop().map(_ + ".").getOrElse("")
 
-  override def aliasedName: String = {
+  override def aliasedName()(implicit ormConf: ORMConfiguration): String = {
     val prefix = _getPrefix
     ormConf.dialect.compositeFieldName(prefix + _1.name, prefix + _2.name)
   }
 
-  override def EQ(value: (T1, T2)) = {
+  override def EQ(value: (T1, T2))(implicit ormConf: ORMConfiguration) = {
     val prefix = _getPrefix
     AND(new SimpleExpression(ormConf.dialect.EQ(prefix + _1.name, placeholder), List(value._1)),
       new SimpleExpression(ormConf.dialect.EQ(prefix + _2.name, placeholder), List(value._2)))
   }
-  override def NE(value: (T1, T2)) = {
+  override def NE(value: (T1, T2))(implicit ormConf: ORMConfiguration) = {
     val prefix = _getPrefix
     AND(new SimpleExpression(ormConf.dialect.NE(prefix + _1.name, placeholder), List(value._1)),
       new SimpleExpression(ormConf.dialect.NE(prefix + _2.name, placeholder), List(value._2)))
   }
-  override def IS_NULL = {
+  override def IS_NULL()(implicit ormConf: ORMConfiguration) = {
     val prefix = _getPrefix
     AND(new SimpleExpression(ormConf.dialect.IS_NULL(prefix + _1.name), Nil),
       new SimpleExpression(ormConf.dialect.IS_NULL(prefix + _2.name), Nil))
   }
-  override def IS_NOT_NULL = {
+  override def IS_NOT_NULL()(implicit ormConf: ORMConfiguration) = {
     val prefix = _getPrefix
     AND(new SimpleExpression(ormConf.dialect.IS_NOT_NULL(prefix + _1.name), Nil),
       new SimpleExpression(ormConf.dialect.IS_NOT_NULL(prefix + _2.name), Nil))
