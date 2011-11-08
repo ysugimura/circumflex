@@ -12,3 +12,4 @@ circumflex-orm/lib
 
 /lib_managed
 .cache
+/bin

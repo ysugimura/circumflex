@@ -183,7 +183,7 @@ class DDLUnit {
     this
   }
 
-  def close() {
+  def close()(implicit ormConf: ORMConfiguration) {
     tx.close()
     ormConf.connectionProvider.close()
   }

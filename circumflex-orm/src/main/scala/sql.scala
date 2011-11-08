@@ -179,7 +179,7 @@ case class SetOperation(_toSql: String) extends SQLable {
 
 class Order(val expression: String, val _parameters: Seq[Any])
     extends Expression {
-  protected var _specificator = ormConf.dialect.asc
+  protected var _specificator: String = null; //TODO = ormConf.dialect.asc
   def parameters()(implicit ormConf: ORMConfiguration) = _parameters;
   def ASC()(implicit ormConf: ORMConfiguration): this.type = {
     this._specificator = ormConf.dialect.asc

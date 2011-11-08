@@ -266,7 +266,7 @@ class Transaction {
     this.cache.invalidate()
   }
 
-  def close() {
+  def close()(implicit ormConf: ORMConfiguration) {
     if (isLive) try {
       // close all cached statements
       _statementsCache.values.foreach(_.close())
@@ -280,7 +280,7 @@ class Transaction {
     }
   }
 
-  protected def getConnection: Connection = {
+  protected def getConnection()(implicit ormConf: ORMConfiguration): Connection = {
     if (_connection == null || _connection.isClosed) {
       _connection = ormConf.connectionProvider.openConnection()
       ormConf.statisticsManager.connectionsOpened.incrementAndGet()
@@ -296,7 +296,7 @@ class Transaction {
   // Execution methods
 
   def execute[A](connActions: Connection => A,
-                 errActions: Throwable => A): A =
+                 errActions: Throwable => A)(implicit ormConf: ORMConfiguration): A =
     try {
       ormConf.statisticsManager.executions.incrementAndGet()
       val result = connActions(getConnection)
@@ -310,7 +310,7 @@ class Transaction {
 
   def execute[A](sql: String,
                  stActions: PreparedStatement => A,
-                 errActions: Throwable => A): A = execute({ conn =>
+                 errActions: Throwable => A)(implicit ormConf: ORMConfiguration): A = execute({ conn =>
     ORM_LOG.debug(ormConf.prefix(": ")  + sql)
     val st =_statementsCache.get(sql).getOrElse {
       val statement = ormConf.dialect.prepareStatement(conn, sql)
@@ -320,7 +320,8 @@ class Transaction {
     stActions(st)
   }, errActions)
 
-  def apply[A](block: => A): A = {
+  def apply[A](block: => A)(implicit ormConf: ORMConfiguration): A = {
+    /* TODO
     val sp = getConnection.setSavepoint()
     try {
       block
@@ -334,6 +335,8 @@ class Transaction {
     } finally {
       getConnection.releaseSavepoint(sp)
     }
+    */
+    throw new Exception
   }
 
 }
@@ -344,6 +347,7 @@ trait TransactionManager {
 
 class DefaultTransactionManager extends TransactionManager {
 
+  /* TODO
   Context.addDestroyListener(c => try {
     get.commit()
     ORM_LOG.trace("Committed current transaction.")
@@ -360,6 +364,8 @@ class DefaultTransactionManager extends TransactionManager {
   } finally {
     get.close()
   })
+  */
+  throw new Exception
 
   def get: Transaction = ctx.get("orm.transaction") match {
     case Some(t: Transaction) => t

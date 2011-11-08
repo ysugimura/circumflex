@@ -39,11 +39,11 @@ trait CacheService {
   def invalidateRecords[PK, R <: Record[PK, R]](
       relation: Relation[PK, R])
   def cacheRecord[PK, R <: Record[PK, R]](
-      id: PK, relation: Relation[PK, R], record: => Option[R]): Option[R]
+      id: PK, relation: Relation[PK, R], record: => Option[R])(implicit ormConf: ORMConfiguration): Option[R]
   def evictRecord[PK, R <: Record[PK, R]](
       id: PK, relation: Relation[PK, R])
   def updateRecord[PK, R <: Record[PK, R]](
-      id: PK, relation: Relation[PK, R], record: R): R = {
+      id: PK, relation: Relation[PK, R], record: R)(implicit ormConf: ORMConfiguration): R = {
     evictRecord(id, relation)
     cacheRecord(id, relation, Some(record))
     record
@@ -64,11 +64,11 @@ trait CacheService {
   def invalidateInverse[K, C <: Record[_, C], P <: Record[K, P]](
       association: Association[K, C, P])
   def cacheInverse[K, C <: Record[_, C], P <: Record[K, P]](
-      parentId: K, association: Association[K, C, P], children: => Seq[C]): Seq[C]
+      parentId: K, association: Association[K, C, P], children: => Seq[C])(implicit ormConf: ORMConfiguration): Seq[C]
   def evictInverse[K, C <: Record[_, C], P <: Record[K, P]](
       parentId: K, association: Association[K, C, P])
   def updateInverse[K, C <: Record[_, C], P <: Record[K, P]](
-      parentId: K, association: Association[K, C, P], children: Seq[C]): Seq[C] = {
+      parentId: K, association: Association[K, C, P], children: Seq[C])(implicit ormConf: ORMConfiguration): Seq[C] = {
     evictInverse(parentId, association)
     cacheInverse(parentId, association, children)
   }
@@ -107,7 +107,7 @@ class DefaultCacheService extends CacheService {
     }
   }
   def cacheRecord[PK, R <: Record[PK, R]](
-      id: PK, relation: Relation[PK, R], record: => Option[R]): Option[R] =
+      id: PK, relation: Relation[PK, R], record: => Option[R])(implicit ormConf: ORMConfiguration): Option[R] =
     relation match {
       case c: Cacheable[PK, R] => c.cache(id, record)
       case _ =>
@@ -135,7 +135,7 @@ class DefaultCacheService extends CacheService {
     _inverseCache(association).clear()
   }
   def cacheInverse[K, C <: Record[_, C], P <: Record[K, P]](
-      parentId: K, association: Association[K, C, P], children: => Seq[C]): Seq[C] = {
+      parentId: K, association: Association[K, C, P], children: => Seq[C])(implicit ormConf: ORMConfiguration): Seq[C] = {
     val cache = _inverseCache(association)
     cache.get(parentId) match {
       case Some(children: Seq[C]) =>

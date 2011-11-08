@@ -287,8 +287,8 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     result
   }
 
-  def AND(criteria: Criteria[PK, R]): Criteria[PK, R] = merge(criteria, ormConf.dialect.AND)
-  def OR(criteria: Criteria[PK, R]): Criteria[PK, R] = merge(criteria, ormConf.dialect.OR)
+  def AND(criteria: Criteria[PK, R])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(criteria, ormConf.dialect.AND)
+  def OR(criteria: Criteria[PK, R])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(criteria, ormConf.dialect.OR)
 
   /*! Criteria can be merged with inverse associations to create logical scopes. Same
   rules are applied as with criteria merging, except that the criteria object with

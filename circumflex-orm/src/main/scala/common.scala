@@ -151,7 +151,7 @@ trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option
   inside JDBC `PreparedStatement` (usually `?` works, but custom data-type may require
   some special treatment).
    */
-  def placeholder = ormConf.dialect.placeholder
+  def placeholder()(implicit ormConf: ORMConfiguration) = ormConf.dialect.placeholder
 
   /*! ## Composing predicates
 

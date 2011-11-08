@@ -256,7 +256,7 @@ class XmlField[R <: Record[_, R]](name: String, record: R, val root: String)
     "<" + root + ">" + str + "</" + root +">"))
   override def read(rs: ResultSet, alias: String) =
     any2option(rs.getString(alias)).map(x => XML.loadString(x))
-  override def placeholder = ormConf.dialect.xmlPlaceholder
+  override def placeholder()(implicit ormConf: ORMConfiguration) = ormConf.dialect.xmlPlaceholder
 }
 
 class FieldComposition2[T1, T2, R <: Record[_, R]](val _1: Field[T1, R],
