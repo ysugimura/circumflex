@@ -1,7 +1,7 @@
 package ru.circumflex
 package orm
-
 import core._
+
 import java.util.Date
 import xml._
 import java.sql.ResultSet

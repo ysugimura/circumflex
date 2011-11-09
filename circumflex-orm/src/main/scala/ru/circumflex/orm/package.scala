@@ -1,6 +1,6 @@
 package ru.circumflex
-
 import core._
+
 import collection.mutable.Stack
 import java.util.regex.Pattern
 

@@ -1,7 +1,6 @@
 package ru.circumflex
 package orm
 
-import core._
 
 /*!# SQLable & Expression
 

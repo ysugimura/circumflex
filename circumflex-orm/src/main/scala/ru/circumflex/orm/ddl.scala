@@ -1,6 +1,5 @@
 package ru.circumflex
 package orm
-
 import core._
 import java.io.File
 import java.lang.IllegalStateException

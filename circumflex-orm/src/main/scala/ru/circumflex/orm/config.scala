@@ -1,7 +1,7 @@
 package ru.circumflex
 package orm
-
 import core._
+
 import javax.sql.DataSource
 import javax.naming.InitialContext
 import java.util.Date

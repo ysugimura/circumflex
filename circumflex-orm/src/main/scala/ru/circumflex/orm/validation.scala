@@ -1,6 +1,5 @@
 package ru.circumflex
 package orm
-
 import core._
 
 class RecordValidator[PK, R <: Record[PK, R]] {

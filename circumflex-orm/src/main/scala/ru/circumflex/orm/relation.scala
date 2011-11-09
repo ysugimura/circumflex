@@ -1,7 +1,7 @@
 package ru.circumflex
 package orm
-
 import core._
+
 import java.lang.reflect.Method
 
 /*!# Relations
