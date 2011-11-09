@@ -55,12 +55,14 @@ object Creation {
     cx("orm.connection.password") = ""
     */
     
-    val unit = new DDLUnit(Country, City)
+    val unit = new DDLUnit(Country, City)    
+    //unit.createSqls.foreach(println)    
+    unit.CREATE()
     
-    unit.createSqls.foreach(println)
-    
-    
-//    unit.CREATE()
-    
+    val country = new Country()
+    country.code := "jp"
+    country.name := "japan"
+    country.save
+    COMMIT
   }
 }
