@@ -1,3 +1,4 @@
+package ru.circumflex.orm;
 
 import org.junit.runner.JUnitCore;
 import org.junit.runner.RunWith;
