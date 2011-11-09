@@ -161,20 +161,20 @@ class DefinitionHelper[R <: Record[_, R]](nameGet: (ORMConfiguration) => String,
   def INDEX(expression: String): Index = throw new Exception
 }
 
-case class ForeignKeyAction(_toSql: String) extends SQLable {
+case class ForeignKeyAction(toSqlGet: (ORMConfiguration) => String) extends SQLable {
  //TODO override def toString = toSql
-  override def toSql()(implicit ormConf: ORMConfiguration) = _toSql;
+  override def toSql()(implicit ormConf: ORMConfiguration) = toSqlGet(ormConf);
   override def toString: String = throw new Exception
 }
 
-case class JoinType(_toSql: String) extends SQLable {
-   override def toSql()(implicit ormConf: ORMConfiguration) = _toSql;
+case class JoinType(toSqlGet: (ORMConfiguration) => String) extends SQLable {
+   override def toSql()(implicit ormConf: ORMConfiguration) = toSqlGet(ormConf);
  //TODO override def toString = toSql
    override def toString: String = throw new Exception
 }
 
-case class SetOperation(_toSql: String) extends SQLable {
-   override def toSql()(implicit ormConf: ORMConfiguration) = _toSql;
+case class SetOperation(toSqlGet: (ORMConfiguration) => String) extends SQLable {
+   override def toSql()(implicit ormConf: ORMConfiguration) = toSqlGet(ormConf);
  //TODO  override def toString = toSql
    override def toString: String = throw new Exception
 }

@@ -175,10 +175,13 @@ class SimpleConnectionProvider(
 
   protected def createDataSource: DataSource = cx.get("orm.connection.datasource") match {
     case Some(jndiName: String) => {
+      /*
       val ctx = new InitialContext
       val ds = ctx.lookup(jndiName).asInstanceOf[DataSource]
       ORM_LOG.info("Using JNDI datasource ({}).", jndiName)
       ds
+      */
+      throw new Exception("Should remove ctx reference");
     }
     case _ => {
       ORM_LOG.info("Using c3p0 connection pool.")

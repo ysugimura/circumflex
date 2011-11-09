@@ -81,23 +81,23 @@ package object orm {
 
   // Constants
 
-  val NO_ACTION = ForeignKeyAction(ormConf.dialect.fkNoAction)
-  val CASCADE = ForeignKeyAction(ormConf.dialect.fkCascade)
-  val RESTRICT = ForeignKeyAction(ormConf.dialect.fkRestrict)
-  val SET_NULL = ForeignKeyAction(ormConf.dialect.fkSetNull)
-  val SET_DEFAULT = ForeignKeyAction(ormConf.dialect.fkSetDefault)
+  val NO_ACTION = ForeignKeyAction(_.dialect.fkNoAction)
+  val CASCADE = ForeignKeyAction(_.dialect.fkCascade)
+  val RESTRICT = ForeignKeyAction(_.dialect.fkRestrict)
+  val SET_NULL = ForeignKeyAction(_.dialect.fkSetNull)
+  val SET_DEFAULT = ForeignKeyAction(_.dialect.fkSetDefault)
 
-  val INNER = JoinType(ormConf.dialect.innerJoin)
-  val LEFT = JoinType(ormConf.dialect.leftJoin)
-  val RIGHT = JoinType(ormConf.dialect.rightJoin)
-  val FULL = JoinType(ormConf.dialect.fullJoin)
+  val INNER = JoinType(_.dialect.innerJoin)
+  val LEFT = JoinType(_.dialect.leftJoin)
+  val RIGHT = JoinType(_.dialect.rightJoin)
+  val FULL = JoinType(_.dialect.fullJoin)
 
-  val OP_UNION = SetOperation(ormConf.dialect.UNION)
-  val OP_UNION_ALL = SetOperation(ormConf.dialect.UNION_ALL)
-  val OP_EXCEPT = SetOperation(ormConf.dialect.EXCEPT)
-  val OP_EXCEPT_ALL = SetOperation(ormConf.dialect.EXCEPT_ALL)
-  val OP_INTERSECT = SetOperation(ormConf.dialect.INTERSECT)
-  val OP_INTERSECT_ALL = SetOperation(ormConf.dialect.INTERSECT_ALL)
+  val OP_UNION = SetOperation(_.dialect.UNION)
+  val OP_UNION_ALL = SetOperation(_.dialect.UNION_ALL)
+  val OP_EXCEPT = SetOperation(_.dialect.EXCEPT)
+  val OP_EXCEPT_ALL = SetOperation(_.dialect.EXCEPT_ALL)
+  val OP_INTERSECT = SetOperation(_.dialect.INTERSECT)
+  val OP_INTERSECT_ALL = SetOperation(_.dialect.INTERSECT_ALL)
 
   // Predicates DSL
 
