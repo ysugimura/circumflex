@@ -214,7 +214,7 @@ class Dialect(implicit ormConf: ORMConfiguration) {
       if (f.isAutoIncrement && !field.record.relation.isInstanceOf[View[_, R]]) => {
       val seqName = sequenceName(f)
       val seq = new SchemaObject {
-        val objectName = "SEQUENCE " + seqName
+        def objectName()(implicit ormConf: ORMConfiguration) = "SEQUENCE " + seqName
         override def sqlDrop()(implicit ormConf: ORMConfiguration) = "DROP SEQUENCE " + seqName
         override def sqlCreate()(implicit ormConf: ORMConfiguration) = "CREATE SEQUENCE " + seqName
       }

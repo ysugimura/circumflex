@@ -58,8 +58,9 @@ trait SchemaObject {
 
   def sqlDrop()(implicit ormConf: ORMConfiguration): String
 
-  def objectName: String
+  def objectName()(implicit ormConf: ORMConfiguration): String
 
+  /* TODO
   override def hashCode = objectName.toLowerCase.hashCode
 
   override def equals(obj: Any) = obj match {
@@ -68,6 +69,10 @@ trait SchemaObject {
   }
 
   override def toString = objectName
+  */  
+  override def hashCode: Int = throw new Exception
+  override def equals(obj: Any): Boolean = throw new Exception
+  override def toString: String = throw new Exception
 }
 
 /*!# Value holders

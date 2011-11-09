@@ -3,11 +3,11 @@ package circumflex_orm_only
 
 import ru.circumflex.orm._
 
-/*
+
 
 class Country extends Record[String, Country] {
   val code = "code".VARCHAR(2).NOT_NULL.DEFAULT("'ch'")
-  val name = "name".TEXT.NOT_NULL
+  def name()(implicit ormConf: ORMConfiguration) = "name".TEXT.NOT_NULL
 
   def cities = inverseMany(City.country)
   def relation = Country
@@ -18,7 +18,7 @@ object Country extends Country with Table[String, Country]
 
 class City extends Record[Long, City] with SequenceGenerator[Long, City] {
   val id = "id".BIGINT.NOT_NULL.AUTO_INCREMENT
-  val name = "name".TEXT
+  def name()(implicit ormConf: ORMConfiguration) = "name".TEXT
   val country = "country_code".TEXT.NOT_NULL
           .REFERENCES(Country)
           .ON_DELETE(CASCADE)
@@ -30,7 +30,6 @@ class City extends Record[Long, City] with SequenceGenerator[Long, City] {
 
 object City extends City with Table[Long, City]
 
-*/
 
 
 object Creation {

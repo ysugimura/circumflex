@@ -20,7 +20,7 @@ Following classes represent various database schema objects:
 Circumflex ORM also uses some helpers to make DSL-style data definition.
 */
 class Schema(val name: String) extends SchemaObject {
-  def objectName = "SCHEMA " + name
+  def objectName()(implicit ormConf: ORMConfiguration) = "SCHEMA " + name
   def sqlCreate()(implicit ormConf: ORMConfiguration) = ormConf.dialect.createSchema(this)
   def sqlDrop()(implicit ormConf: ORMConfiguration) = ormConf.dialect.dropSchema(this)
 }
@@ -29,7 +29,7 @@ abstract class Constraint(val constraintName: String,
                           val relation: Relation[_, _])
     extends SchemaObject with SQLable {
 
-  def objectName = "CONSTRAINT " + constraintName
+  def objectName()(implicit ormConf: ORMConfiguration) = "CONSTRAINT " + constraintName
   def sqlCreate()(implicit ormConf: ORMConfiguration) = ormConf.dialect.alterTableAddConstraint(this)
   def sqlDrop()(implicit ormConf: ORMConfiguration) = ormConf.dialect.alterTableDropConstraint(this)
   def toSql()(implicit ormConf: ORMConfiguration) = ormConf.dialect.constraintDefinition(this)
@@ -104,7 +104,7 @@ class Index(val name: String,
     this
   }
 
-  def objectName = "INDEX " + name
+  def objectName()(implicit ormConf: ORMConfiguration) = "INDEX " + name
   def sqlCreate()(implicit ormConf: ORMConfiguration) = ormConf.dialect.createIndex(this)
   def sqlDrop()(implicit ormConf: ORMConfiguration) = ormConf.dialect.dropIndex(this)
 }
