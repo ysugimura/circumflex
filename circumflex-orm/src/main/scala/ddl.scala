@@ -55,12 +55,12 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
     resetMsgs()
   }
 
-  def add(objects: SchemaObject*)(implicit ormConf: ORMConfiguration): this.type = {
+  def add(objects: SchemaObject*): this.type = {
     objects.foreach(addObject(_))
     this
   }
 
-  def addObject(obj: SchemaObject)(implicit ormConf: ORMConfiguration): this.type = {
+  def addObject(obj: SchemaObject): this.type = {
     def processRelation(r: Relation[_, _]) {
       addObject(r.schema)
       r.preAux.foreach(o =>
@@ -88,8 +88,8 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
     this
   }
 
-  protected def dropObjects(objects: Seq[SchemaObject])(implicit ormConf: ORMConfiguration) {
-     val tx: Transaction = ormConf.transactionManager.get
+  protected def dropObjects(objects: Seq[SchemaObject]) {
+    val tx: Transaction = ormConf.transactionManager.get
     objects.reverse.foreach { o =>
       tx.execute(o.sqlDrop, { st =>
         st.executeUpdate()
@@ -107,8 +107,8 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
     }
   }
 
-  protected def createObjects(objects: Seq[SchemaObject])(implicit ormConf: ORMConfiguration) {
-     val tx: Transaction = ormConf.transactionManager.get
+  protected def createObjects(objects: Seq[SchemaObject]) {
+    val tx: Transaction = ormConf.transactionManager.get
     objects.foreach { o =>
       tx.execute(o.sqlCreate, { st =>
         st.executeUpdate()
@@ -126,14 +126,14 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
     }
   }
 
-  def DROP()(implicit ormConf: ORMConfiguration): this.type = {
+  def DROP(): this.type = {
     resetMsgs()
     _drop()
     this
   }
 
-  def _drop()(implicit ormConf: ORMConfiguration) {
-     val tx: Transaction = ormConf.transactionManager.get
+  def _drop() {
+    val tx: Transaction = ormConf.transactionManager.get
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -152,14 +152,14 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
     }, { throw _ })
   }
 
-  def CREATE()(implicit ormConf: ORMConfiguration): this.type = {
+  def CREATE(): this.type = {
     resetMsgs()
     _create()
     this
   }
 
-  def _create()(implicit ormConf: ORMConfiguration) {
-     val tx: Transaction = ormConf.transactionManager.get
+  def _create() {
+    val tx: Transaction = ormConf.transactionManager.get
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -177,15 +177,15 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
     }, { throw _ })
   }
 
-  def DROP_CREATE()(implicit ormConf: ORMConfiguration): this.type = {
+  def DROP_CREATE(): this.type = {
     resetMsgs()
     _drop()
     _create()
     this
   }
 
-  def close()(implicit ormConf: ORMConfiguration) {
-     val tx: Transaction = ormConf.transactionManager.get
+  def close() {
+    val tx: Transaction = ormConf.transactionManager.get
     tx.close()
     ormConf.connectionProvider.close()
   }
