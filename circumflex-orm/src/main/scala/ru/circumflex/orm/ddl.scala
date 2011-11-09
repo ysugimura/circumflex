@@ -138,17 +138,20 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
       val autoCommit = conn.getAutoCommit
       conn.setAutoCommit(true)
       // Execute a script.
-      dropObjects(postAux)
-      dropObjects(views)
-      if (ormConf.dialect.supportsDropConstraints)
-        dropObjects(constraints)
-      dropObjects(tables)
-      dropObjects(preAux)
-      if (ormConf.dialect.supportsSchema)
-        dropObjects(schemata)
+      dropList.foreach(dropObjects)
       // Restore auto-commit.
       conn.setAutoCommit(autoCommit)
     }, { throw _ })
+  }
+  
+  private def dropList: List[Seq[SchemaObject]] = {
+    var result: List[Seq[SchemaObject]] = List(postAux, views)
+    if (ormConf.dialect.supportsDropConstraints)
+      result = result ::: List(constraints)
+    result = result ::: List(tables, preAux)
+    if (ormConf.dialect.supportsSchema)
+      result = result ::: List(schemata)    
+    result
   }
 
   def CREATE(): this.type = {
@@ -164,18 +167,20 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
       val autoCommit = conn.getAutoCommit
       conn.setAutoCommit(true)
       // Execute a script.
-      if (ormConf.dialect.supportsSchema)
-        createObjects(schemata)
-      createObjects(preAux)
-      createObjects(tables)
-      createObjects(constraints)
-      createObjects(views)
-      createObjects(postAux)
+      createList.foreach(createObjects)
       // Restore auto-commit.
       conn.setAutoCommit(autoCommit)
     }, { throw _ })
   }
 
+  def createSqls = createList.flatMap(_.map(_.sqlCreate))
+  
+  private def createList: List[Seq[SchemaObject]] = {
+    val head: List[Seq[SchemaObject]] = 
+        if (ormConf.dialect.supportsSchema) List(schemata) else Nil
+    head :::  List(preAux, tables, constraints, views, postAux)
+  }
+  
   def DROP_CREATE(): this.type = {
     resetMsgs()
     _drop()
