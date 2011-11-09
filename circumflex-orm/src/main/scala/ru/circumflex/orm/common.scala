@@ -139,14 +139,15 @@ trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option
   Finally, `toString` returns the qualified name of relation which it
   belongs to followed by a dot and the field name.
   */
-  /* TODO
   override def equals(that: Any): Boolean = that match {
-    case that: ValueHolder[_, _] => this.canEqual(that) &&
-        this.name == that.name
+    case that: ValueHolder[_, _] => {
+      // 現在はORMConfigurationの不要なもののみ正常に動作。TODO
+      implicit val ormConf: ORMConfiguration = null
+      this.canEqual(that) && this.name == that.name
+    }
     case _ => false
   }
-  */
-  override def equals(that: Any): Boolean = throw new Exception
+
   /* TODO
   override lazy val hashCode: Int =  record.relation.qualifiedName.hashCode * 31 +
       name.hashCode
