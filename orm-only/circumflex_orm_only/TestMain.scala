@@ -35,17 +35,17 @@ object City extends City with Table[Long, City]
 object Creation {
 
   def main(args: Array[String]) {
-    /*
+    
     import ru.circumflex.core._
 
     // create my-configuration, put to context
-    val conf = new MyORMConfiguration
-    conf.url = "jdbc:h2:sample";
-    conf.username = "sa"
-    conf.password = ""
-    conf.dialect = new H2Dialect
+    implicit val ormConf = new MyORMConfiguration
+    ormConf.url = "jdbc:h2:sample";
+    ormConf.username = "sa"
+    ormConf.password = ""
+    ormConf.dialect = new H2Dialect
     
-    ctx.put("orm.conf", conf)
+//    ctx.put("orm.conf", conf)
     /*
     
     val cx = Circumflex
@@ -57,6 +57,6 @@ object Creation {
     
     val unit = new DDLUnit(Country, City)
     unit.CREATE()
-    */
+    
   }
 }

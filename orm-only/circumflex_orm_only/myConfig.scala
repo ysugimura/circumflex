@@ -45,7 +45,7 @@ class MyORMConfiguration extends ORMConfiguration {
 
   override def typeConverter: TypeConverter = { throw new Exception }
   
-  private var _transactionManager: TransactionManager = new DefaultTransactionManager;
+  private var _transactionManager: TransactionManager = new DefaultTransactionManager(this);
   def transactionManager_=(value: TransactionManager) { require(value != null); _transactionManager = value }
   override def transactionManager: TransactionManager = { _transactionManager }
   

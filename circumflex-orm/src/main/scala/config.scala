@@ -118,7 +118,7 @@ trait ORMConfigurationCx extends ORMConfiguration {
   override lazy val typeConverter: TypeConverter = cx.instantiate[TypeConverter](
     "orm.typeConverter", new TypeConverter)
   override lazy val transactionManager: TransactionManager = cx.instantiate[TransactionManager](
-    "orm.transactionManager", new DefaultTransactionManager)
+    "orm.transactionManager", new DefaultTransactionManager(this))
   override lazy val defaultSchema: Schema = new Schema(
     cx.get("orm.defaultSchema").map(_.toString).getOrElse("public"))
   override lazy val statisticsManager: StatisticsManager = cx.instantiate[StatisticsManager](
@@ -246,7 +246,7 @@ demarcation -- in this case you may provide your own implementation.
 JDBC `PreparedStatement` objects are also cached within `Transaction` for
 performance considerations.
 */
-class Transaction {
+class Transaction(protected val ormConf: ORMConfiguration) {
 
   // Connections are opened lazily
   protected var _connection: Connection = null
@@ -266,7 +266,7 @@ class Transaction {
     this.cache.invalidate()
   }
 
-  def close()(implicit ormConf: ORMConfiguration) {
+  def close() {
     if (isLive) try {
       // close all cached statements
       _statementsCache.values.foreach(_.close())
@@ -280,7 +280,7 @@ class Transaction {
     }
   }
 
-  protected def getConnection()(implicit ormConf: ORMConfiguration): Connection = {
+  protected def getConnection(): Connection = {
     if (_connection == null || _connection.isClosed) {
       _connection = ormConf.connectionProvider.openConnection()
       ormConf.statisticsManager.connectionsOpened.incrementAndGet()
@@ -296,7 +296,7 @@ class Transaction {
   // Execution methods
 
   def execute[A](connActions: Connection => A,
-                 errActions: Throwable => A)(implicit ormConf: ORMConfiguration): A =
+                 errActions: Throwable => A): A =
     try {
       ormConf.statisticsManager.executions.incrementAndGet()
       val result = connActions(getConnection)
@@ -320,7 +320,7 @@ class Transaction {
     stActions(st)
   }, errActions)
 
-  def apply[A](block: => A)(implicit ormConf: ORMConfiguration): A = {
+  def apply[A](block: => A): A = {
     /* TODO
     val sp = getConnection.setSavepoint()
     try {
@@ -341,13 +341,12 @@ class Transaction {
 
 }
 
-trait TransactionManager {
+abstract class TransactionManager(protected val ormConf: ORMConfiguration) {
   def get: Transaction
 }
 
-class DefaultTransactionManager extends TransactionManager {
+class DefaultTransactionManager(override protected val ormConf: ORMConfiguration) extends TransactionManager(ormConf) {
 
-  /* TODO
   Context.addDestroyListener(c => try {
     get.commit()
     ORM_LOG.trace("Committed current transaction.")
@@ -364,21 +363,17 @@ class DefaultTransactionManager extends TransactionManager {
   } finally {
     get.close()
   })
-  */
-  throw new Exception
 
-  def get: Transaction = ctx.get("orm.transaction") match {
-    case Some(t: Transaction) => t
-    case _ =>
-      val t = cx.instantiate[Transaction]("orm.transaction", new Transaction)
-      ctx.update("orm.transaction", t)
-      t
+  private var transaction: Transaction = null;
+  
+  def get: Transaction = {
+    if (transaction == null) transaction = new Transaction(ormConf)
+    transaction
   }
-
 }
 
 // Special helper for single-user REPL usage
-class ConsoleTransactionManager extends TransactionManager {
-  var currentTransaction = new Transaction
+class ConsoleTransactionManager(override protected val ormConf: ORMConfiguration) extends TransactionManager(ormConf) {
+  var currentTransaction = new Transaction(ormConf)
   def get = currentTransaction
 }
