@@ -33,7 +33,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
   // Process the `prefetchSeq` of root relation
   rootNode.relation.prefetchSeq.foreach(prefetch(_))
 
-  protected def resetProjection(projection: Projection[_]) {
+  protected def resetProjection(projection: Projection[_])(implicit ormConf: ORMConfiguration) {
     projection match {
       case a: AtomicProjection[_] => a.AS("p_" + nextCounter)
       case c: CompositeProjection[_] => c.subProjections.foreach(p => resetProjection(p))
@@ -72,7 +72,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
   }
 
   protected def updateJoinTree[PKN, N <: Record[PKN, N]](
-      node: RelationNode[PKN, N], tree: RelationNode[PK, R]): RelationNode[PK, R] =
+      node: RelationNode[PKN, N], tree: RelationNode[PK, R])(implicit ormConf: ORMConfiguration): RelationNode[PK, R] =
     tree match {
     // outra vez, types are not really important here
       case j: JoinNode[PK, R, PK, R] => try {   // try the left side
@@ -95,6 +95,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
         val pIndex = _projections.indexWhere(_.node.alias == pNode.alias)
         val cIndex = _projections.indexWhere(_.node.alias == cNode.alias)
         if (pIndex == -1 || cIndex == -1) return
+        val tx: Transaction = ormConf.transactionManager.get
         tuple(pIndex).asInstanceOf[Option[N]] map {
           parent =>
             var children = tx.cache.cacheInverse(parent.PRIMARY_KEY(), a, Nil)
@@ -138,7 +139,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     this
   }
 
-  def addJoin[PKN, N <: Record[PKN, N]](node: RelationNode[PKN, N]): Criteria[PK, R] = {
+  def addJoin[PKN, N <: Record[PKN, N]](node: RelationNode[PKN, N])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = {
     _joinTree = updateJoinTree(node, _joinTree)
     this
   }
@@ -170,7 +171,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
 
   // Querying
 
-  def mkSelect(): SQLQuery[Array[Option[Any]]] =
+  def mkSelect()(implicit ormConf: ORMConfiguration): SQLQuery[Array[Option[Any]]] =
     SELECT(new UntypedTupleProjection(projections: _*))
         .FROM(queryPlan)
         .WHERE(predicate)
@@ -180,7 +181,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
   def mkUpdate(): Update[PK, R] = UPDATE(rootNode).WHERE(predicate)
   def mkDelete(): Delete[PK, R] = DELETE(rootNode).WHERE(predicate)
 
-  def projections: Seq[Projection[_]] = {
+  def projections()(implicit ormConf: ORMConfiguration): Seq[Projection[_]] = {
     _projections.foreach(p => resetProjection(p))
     _projections
   }
@@ -262,7 +263,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
   Note, however, that alias collision can occur while merging criteria with
   joins. It is a best practice to assign join aliases manually.
   */
-  protected def merge(criteria: Criteria[PK, R], operator: String): Criteria[PK, R] = {
+  protected def merge(criteria: Criteria[PK, R], operatorGet: (ORMConfiguration) => String): Criteria[PK, R] = {
     val result = this.clone.asInstanceOf[Criteria[PK, R]]
     // compare aliases
     if (result.rootNode.alias != criteria.rootNode.alias)
@@ -278,7 +279,7 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     }
     // copy restrictions
     result._restrictions = List(new AggregatePredicate(
-      operator, List(result.predicate, criteria.predicate)))
+      operatorGet, List(result.predicate, criteria.predicate)))
     // copy order specificators
     criteria._orders.foreach { o =>
       if (!result._orders.contains(o))
@@ -287,20 +288,20 @@ class Criteria[PK, R <: Record[PK, R]](val rootNode: RelationNode[PK, R])
     result
   }
 
-  def AND(criteria: Criteria[PK, R])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(criteria, ormConf.dialect.AND)
-  def OR(criteria: Criteria[PK, R])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(criteria, ormConf.dialect.OR)
+  def AND(criteria: Criteria[PK, R])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(criteria, (ormConf: ORMConfiguration) => ormConf.dialect.AND)
+  def OR(criteria: Criteria[PK, R])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(criteria, (ormConf: ORMConfiguration) => ormConf.dialect.OR)
 
   /*! Criteria can be merged with inverse associations to create logical scopes. Same
   rules are applied as with criteria merging, except that the criteria object with
   proper restrictions is created from the inverse association implicitly.
   */
-  protected def merge(inverse: InverseAssociation[_, R, _, _], operator: String)(implicit ormConf: ORMConfiguration): Criteria[PK, R] = {
+  protected def merge(inverse: InverseAssociation[_, R, _, _], operatorGet: (ORMConfiguration) => String)(implicit ormConf: ORMConfiguration): Criteria[PK, R] = {
     val criteria = new Criteria[PK, R](rootNode)
     aliasStack.push(rootNode.alias)
     criteria.add(inverse.association.asInstanceOf[Association[_, _, R]] IS inverse.record.asInstanceOf[R])
-    merge(criteria, operator)
+    merge(criteria, operatorGet)
   }
-  def AND(inverse: InverseAssociation[_, R, _, _])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(inverse, ormConf.dialect.AND)
-  def OR(inverse: InverseAssociation[_, R, _, _])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(inverse, ormConf.dialect.OR)
+  def AND(inverse: InverseAssociation[_, R, _, _])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(inverse, (ormConf: ORMConfiguration) => ormConf.dialect.AND)
+  def OR(inverse: InverseAssociation[_, R, _, _])(implicit ormConf: ORMConfiguration): Criteria[PK, R] = merge(inverse, (ormConf: ORMConfiguration) => ormConf.dialect.OR)
 
 }

@@ -92,6 +92,7 @@ class DDLUnit {
   }
 
   protected def dropObjects(objects: Seq[SchemaObject])(implicit ormConf: ORMConfiguration) {
+     val tx: Transaction = ormConf.transactionManager.get
     objects.reverse.foreach { o =>
       tx.execute(o.sqlDrop, { st =>
         st.executeUpdate()
@@ -110,6 +111,7 @@ class DDLUnit {
   }
 
   protected def createObjects(objects: Seq[SchemaObject])(implicit ormConf: ORMConfiguration) {
+     val tx: Transaction = ormConf.transactionManager.get
     objects.foreach { o =>
       tx.execute(o.sqlCreate, { st =>
         st.executeUpdate()
@@ -134,6 +136,7 @@ class DDLUnit {
   }
 
   def _drop()(implicit ormConf: ORMConfiguration) {
+     val tx: Transaction = ormConf.transactionManager.get
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -159,6 +162,7 @@ class DDLUnit {
   }
 
   def _create()(implicit ormConf: ORMConfiguration) {
+     val tx: Transaction = ormConf.transactionManager.get
     tx.execute({ conn =>
     // We will commit every successfull statement.
       val autoCommit = conn.getAutoCommit
@@ -184,6 +188,7 @@ class DDLUnit {
   }
 
   def close()(implicit ormConf: ORMConfiguration) {
+     val tx: Transaction = ormConf.transactionManager.get
     tx.close()
     ormConf.connectionProvider.close()
   }

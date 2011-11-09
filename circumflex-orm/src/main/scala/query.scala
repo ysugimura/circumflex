@@ -81,7 +81,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
 
   def projections: Seq[Projection[_]] = List(projection)
 
-  protected def ensureProjectionAlias[T](projection: Projection[T]) {
+  protected def ensureProjectionAlias[T](projection: Projection[T])(implicit ormConf: ORMConfiguration) {
     projection match {
       case p: AtomicProjection[_] if (p.alias == "this") => p.AS(nextAlias)
       case p: CompositeProjection[_] =>
@@ -90,11 +90,13 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
     }
   }
 
-  ensureProjectionAlias(projection)
+  throw new Exception
+  //ensureProjectionAlias(projection)
 
   // Query execution
 
   def resultSet[A](actions: ResultSet => A)(implicit ormConf: ORMConfiguration): A = {
+     val tx: Transaction = ormConf.transactionManager.get
     val result = time {
       tx.execute(toSql, { st =>
         setParams(st, 1)
@@ -154,7 +156,7 @@ trait SearchQuery extends Query {
   def WHERE(expression: String, params: Pair[String,Any]*)(implicit ormConf: ORMConfiguration): this.type =
     WHERE(prepareExpr(expression, params: _*))
 
-  def add(predicates: Predicate*): this.type = {
+  def add(predicates: Predicate*)(implicit ormConf: ORMConfiguration): this.type = {
     whereClause match {
       case EmptyPredicate =>
         this._where = AND(predicates: _*)
@@ -232,12 +234,12 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
   protected var _groupByClause = ""
   def groupByClause = _groupByClause
 
-  def GROUP_BY(proj: Projection[_]*): Select[T] = {
+  def GROUP_BY(proj: Projection[_]*)(implicit ormConf: ORMConfiguration): Select[T] = {
     proj.toList.foreach(p => addGroupByProjection(p))
     this
   }
 
-  protected def addGroupByProjection(proj: Projection[_]) {
+  protected def addGroupByProjection(proj: Projection[_])(implicit ormConf: ORMConfiguration) {
     findProjection(projection, p => p.equals(proj)) match {
       case None =>
         this.appendUnaliasedGroupBy(proj)
@@ -246,7 +248,7 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
     }
   }
 
-  protected def appendUnaliasedGroupBy(projection: Projection[_]) {
+  protected def appendUnaliasedGroupBy(projection: Projection[_])(implicit ormConf: ORMConfiguration) {
     projection match {
       case ap: AtomicProjection[_] => appendGroupBy(ap.expression)
       case cp: CompositeProjection[_] =>
@@ -261,7 +263,7 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
   }
 
   protected def findProjection(projection: Projection[_],
-                               predicate: Projection[_] => Boolean): Option[Projection[_]] =
+                               predicate: Projection[_] => Boolean)(implicit ormConf: ORMConfiguration): Option[Projection[_]] =
     if (predicate(projection)) Some(projection)
     else projection match {
       case p: CompositeProjection[_] =>
@@ -325,6 +327,7 @@ class Select[T](projection: Projection[T]) extends SQLQuery[T](projection)
 trait DMLQuery extends Query {
 
   def execute()(implicit ormConf: ORMConfiguration): Int = {
+     val tx: Transaction = ormConf.transactionManager.get
     val result = time {
       tx.execute(toSql, { st =>
         setParams(st, 1)
@@ -353,7 +356,7 @@ class InsertSelect[PK, R <: Record[PK, R]](val relation: Relation[PK, R],
                                            val query: SQLQuery[_])
     extends DMLQuery {
   if (relation.isReadOnly)
-    throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
+    throw new ORMException("The relation " + "relation.qualifiedName" + " is read-only.") // TODO
   def parameters()(implicit ormConf: ORMConfiguration) = query.parameters
   def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.insertSelect(this)
 }
@@ -366,7 +369,7 @@ class Delete[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
     extends DMLQuery with SearchQuery {
   val relation = node.relation
   if (relation.isReadOnly)
-    throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
+    throw new ORMException("The relation " + "relation.qualifiedName" + " is read-only.") // TODO
 
   def parameters()(implicit ormConf: ORMConfiguration) = _where.parameters
   def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.delete(this)
@@ -376,7 +379,7 @@ class Update[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
     extends DMLQuery with SearchQuery {
   val relation = node.relation
   if (relation.isReadOnly)
-    throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
+    throw new ORMException("The relation " + "relation.qualifiedName" + " is read-only.") // TODO
 
   private var _setClause: Seq[(Field[_, R], Option[Any])] = Nil
   def setClause = _setClause

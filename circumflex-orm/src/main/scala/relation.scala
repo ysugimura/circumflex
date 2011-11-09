@@ -60,12 +60,12 @@ trait Relation[PK, R <: Record[PK, R]]
   */
   val _relationName = camelCaseToUnderscore(recordClass.getSimpleName)
   def relationName = _relationName
-  def qualifiedName = ormConf.dialect.relationQualifiedName(this)
+  def qualifiedName()(implicit ormConf: ORMConfiguration) = ormConf.dialect.relationQualifiedName(this)
 
   /*! Default schema name is configured via the `orm.defaultSchema` configuration property.
   You may provide different schema for different relations by overriding their `schema` method.
    */
-  def schema: Schema = ormConf.defaultSchema
+  def schema()(implicit ormConf: ORMConfiguration): Schema = ormConf.defaultSchema
 
   /*! The `isReadOnly` method is used to indicate whether the DML operations
   are allowed with this relation. Tables usually allow them and views usually don't.
@@ -82,7 +82,7 @@ trait Relation[PK, R <: Record[PK, R]]
   /*! Use the `AS` method to create a relation node from this relation with an explicit alias. */
   def AS(alias: String): RelationNode[PK, R] = new RelationNode(this).AS(alias)
 
-  def findAssociation[T, F <: Record[T, F]](relation: Relation[T, F]): Option[Association[T, R, F]] =
+  def findAssociation[T, F <: Record[T, F]](relation: Relation[T, F])(implicit ormConf: ORMConfiguration): Option[Association[T, R, F]] =
     associations.find(_.parentRelation == relation)
         .asInstanceOf[Option[Association[T, R, F]]]
 
@@ -95,10 +95,12 @@ trait Relation[PK, R <: Record[PK, R]]
     * `get` retrieves a record either from cache or from database by specified `id`;
     * `all` retrieves all records.
    */
-  def get(id: PK)(implicit ormConf: ORMConfiguration): Option[R] =
+  def get(id: PK)(implicit ormConf: ORMConfiguration): Option[R] = {
+     val tx: Transaction = ormConf.transactionManager.get
     tx.cache.cacheRecord(id, this,
       (this.AS("root")).map(r => r.criteria.add(r.PRIMARY_KEY EQ id).unique()))
-
+  }
+  
   def all()(implicit ormConf: ORMConfiguration): Seq[R] = this.AS("root").criteria.list()
 
   /*!## Metadata
@@ -107,43 +109,43 @@ trait Relation[PK, R <: Record[PK, R]]
   introspecting current instance upon initialization.
   */
   protected var _methodsMap: Map[Field[_, R], Method] = Map()
-  def methodsMap: Map[Field[_, R], Method] = {
+  def methodsMap()(implicit ormConf: ORMConfiguration): Map[Field[_, R], Method] = {
     init()
     _methodsMap
   }
 
   protected var _fields: List[Field[_, R]] = Nil
-  def fields: Seq[Field[_, R]] = {
+  def fields()(implicit ormConf: ORMConfiguration): Seq[Field[_, R]] = {
     init()
     _fields
   }
 
   protected var _associations: List[Association[_, R, _]] = Nil
-  def associations: Seq[Association[_, R, _]] = {
+  def associations()(implicit ormConf: ORMConfiguration): Seq[Association[_, R, _]] = {
     init()
     _associations
   }
 
   protected var _constraints: List[Constraint] = Nil
-  def constraints: Seq[Constraint] = {
+  def constraints()(implicit ormConf: ORMConfiguration): Seq[Constraint] = {
     init()
     _constraints
   }
 
   protected var _indexes: List[Index] = Nil
-  def indexes: Seq[Index] = {
+  def indexes()(implicit ormConf: ORMConfiguration): Seq[Index] = {
     init()
     _indexes
   }
 
-  private def findMembers(cl: Class[_]) {
+  private def findMembers(cl: Class[_]) (implicit ormConf: ORMConfiguration){
     if (cl != classOf[Any]) findMembers(cl.getSuperclass)
     cl.getDeclaredFields
         .flatMap(f => try Some(cl.getMethod(f.getName)) catch { case e: Exception => None })
         .foreach(processMember(_))
   }
 
-  private def processMember(m: Method) {
+  private def processMember(m: Method)(implicit ormConf: ORMConfiguration) {
     val cl = m.getReturnType
     if (classOf[ValueHolder[_, R]].isAssignableFrom(cl)) {
       val vh = m.invoke(this).asInstanceOf[ValueHolder[_, R]]
@@ -157,7 +159,7 @@ trait Relation[PK, R <: Record[PK, R]]
     }
   }
 
-  private def processHolder(vh: ValueHolder[_, R], m: Method) {
+  private def processHolder(vh: ValueHolder[_, R], m: Method)(implicit ormConf: ORMConfiguration) {
     vh match {
       case f: Field[_, R] =>
         this._fields ++= List(f)
@@ -171,14 +173,14 @@ trait Relation[PK, R <: Record[PK, R]]
     }
   }
 
-  private def associationFK(a: Association[_, R, _]) =
+  private def associationFK(a: Association[_, R, _])(implicit ormConf: ORMConfiguration) =
     CONSTRAINT(relationName + "_" + a.name + "_fkey")
         .FOREIGN_KEY(a.field)
         .REFERENCES(a.parentRelation, a.parentRelation.PRIMARY_KEY)
         .ON_DELETE(a.onDeleteClause)
         .ON_UPDATE(a.onUpdateClause)
 
-  def init() {
+  def init()(implicit ormConf: ORMConfiguration) {
     if (!_initialized) synchronized {
       if (!_initialized) try {
         findMembers(this.getClass)
@@ -204,8 +206,8 @@ trait Relation[PK, R <: Record[PK, R]]
     }
   }
 
-  def getField[T](record: R, field: Field[T, R]): Field[T, R] =
-    methodsMap(field).invoke(record) match {
+  def getField[T](record: R, field: Field[T, R])(implicit ormConf: ORMConfiguration): Field[T, R] =
+    methodsMap.apply(field).invoke(record) match {
       case a: Association[T, R, _] => a.field
       case f: Field[T, R] => f
       case _ => throw new ORMException("Could not retrieve a field.")
@@ -231,7 +233,7 @@ trait Relation[PK, R <: Record[PK, R]]
   relation body using DSL style.
   */
   def CONSTRAINT(name: String) = new ConstraintHelper(name, this)
-  def UNIQUE(columns: ValueHolder[_, R]*) =
+  def UNIQUE(columns: ValueHolder[_, R]*)(implicit ormConf: ORMConfiguration) =
     CONSTRAINT(relationName + "_" + columns.map(_.name).mkString("_") + "_key")
         .UNIQUE(columns: _*)
 
@@ -363,7 +365,7 @@ records.
 */
 trait Table[PK, R <: Record[PK, R]] extends Relation[PK, R] { this: R =>
   def isReadOnly: Boolean = false
-  def objectName: String = "TABLE " + qualifiedName
+  def objectName()(implicit ormConf: ORMConfiguration): String = "TABLE " + qualifiedName
   override def sqlCreate()(implicit ormConf: ORMConfiguration): String = {
     init()
     ormConf.dialect.createTable(this)
@@ -384,7 +386,7 @@ override the `isReadOnly` method accordingly.
 */
 trait View[PK, R <: Record[PK, R]] extends Relation[PK, R] { this: R =>
   def isReadOnly: Boolean = true
-  def objectName: String = "VIEW " + qualifiedName
+  def objectName()(implicit ormConf: ORMConfiguration): String = "VIEW " + qualifiedName
   override def sqlDrop()(implicit ormConf: ORMConfiguration): String = {
     init()
     ormConf.dialect.dropView(this)

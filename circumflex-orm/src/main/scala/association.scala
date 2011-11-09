@@ -23,7 +23,7 @@ class Association[K, C <: Record[_, C], P <: Record[K, P]] (
         val field: Field[K, C], val parentRelation: Relation[K, P])
     extends ValueHolder[P, C] { assoc =>
 
-  def name = field.name
+  def name()(implicit ormConf: ORMConfiguration) = field.name
   def record = field.record
 
   // Cascading actions
@@ -83,12 +83,16 @@ trait InverseAssociation[K, C <: Record[_, C], P <: Record[K, P], T]
   def item()(implicit ormConf: ORMConfiguration): T = get
   def association: Association[K, C, P]
   def record: P
-  def fetch()(implicit ormConf: ORMConfiguration): Seq[C] = if (record.isTransient) Nil
+  def fetch()(implicit ormConf: ORMConfiguration): Seq[C] = {
+    val tx: Transaction = ormConf.transactionManager.get
+    if (record.isTransient) Nil
   else tx.cache.cacheInverse(record.PRIMARY_KEY(), association, {
     val root = association.field.record.relation AS "root"
     aliasStack.push(root.alias)
     SELECT(root.*).FROM(root).WHERE(association.field EQ record.PRIMARY_KEY()).list()
   })
+  }
+  
   def get()(implicit ormConf: ORMConfiguration): T
   def apply()(implicit ormConf: ORMConfiguration): T = get
 

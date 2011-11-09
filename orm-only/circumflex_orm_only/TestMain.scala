@@ -3,7 +3,7 @@ package circumflex_orm_only
 
 import ru.circumflex.orm._
 
-
+/*
 
 class Country extends Record[String, Country] {
   val code = "code".VARCHAR(2).NOT_NULL.DEFAULT("'ch'")
@@ -30,6 +30,7 @@ class City extends Record[Long, City] with SequenceGenerator[Long, City] {
 
 object City extends City with Table[Long, City]
 
+*/
 
 
 object Creation {

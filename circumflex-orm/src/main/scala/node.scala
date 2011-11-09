@@ -46,7 +46,7 @@ class RelationNode[PK, R <: Record[PK, R]](val relation: Relation[PK, R])
   def criteria = new Criteria[PK, R](this)
 
   /*! Relation nodes can be joined to allow restrictions of associated relations. */
-  def findAssociation[T, F <: Record[T, F]](node: RelationNode[T, F]): Option[Association[T, R, F]] =
+  def findAssociation[T, F <: Record[T, F]](node: RelationNode[T, F])(implicit ormConf: ORMConfiguration): Option[Association[T, R, F]] =
     this.relation.findAssociation(node.relation)
 
   def JOIN[T, J <: Record[T, J]](node: RelationNode[T, J],
@@ -54,7 +54,7 @@ class RelationNode[PK, R <: Record[PK, R]](val relation: Relation[PK, R])
                                  joinType: JoinType): JoinNode[PK, R, T, J] =
     new JoinNode(this, node, joinType).ON(on)
   def JOIN[T, J <: Record[T, J]](node: RelationNode[T, J],
-                                 joinType: JoinType = LEFT): JoinNode[PK, R, T, J] =
+                                 joinType: JoinType = LEFT)(implicit ormConf: ORMConfiguration): JoinNode[PK, R, T, J] =
     findAssociation(node) match {
       case Some(a: Association[T, R, J]) =>  // many-to-one join
         new ManyToOneJoin[PK, R, T, J](this, node, a, joinType)
@@ -65,13 +65,13 @@ class RelationNode[PK, R <: Record[PK, R]](val relation: Relation[PK, R])
           new JoinNode(this, node, joinType).ON(EmptyPredicate)
       }
     }
-  def INNER_JOIN[T, J <: Record[T, J]](node: RelationNode[T, J]): JoinNode[PK, R, T, J] =
+  def INNER_JOIN[T, J <: Record[T, J]](node: RelationNode[T, J])(implicit ormConf: ORMConfiguration): JoinNode[PK, R, T, J] =
     JOIN(node, INNER)
-  def LEFT_JOIN[T, J <: Record[T, J]](node: RelationNode[T, J]): JoinNode[PK, R, T, J] =
+  def LEFT_JOIN[T, J <: Record[T, J]](node: RelationNode[T, J])(implicit ormConf: ORMConfiguration): JoinNode[PK, R, T, J] =
     JOIN(node, LEFT)
-  def RIGHT_JOIN[T, J <: Record[T, J]](node: RelationNode[T, J]): JoinNode[PK, R, T, J] =
+  def RIGHT_JOIN[T, J <: Record[T, J]](node: RelationNode[T, J])(implicit ormConf: ORMConfiguration): JoinNode[PK, R, T, J] =
     JOIN(node, RIGHT)
-  def FULL_JOIN[T, J <: Record[T, J]](node: RelationNode[T, J]): JoinNode[PK, R, T, J] =
+  def FULL_JOIN[T, J <: Record[T, J]](node: RelationNode[T, J])(implicit ormConf: ORMConfiguration): JoinNode[PK, R, T, J] =
     JOIN(node, FULL)
 
   /*!## Equality & Others

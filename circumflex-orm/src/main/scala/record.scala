@@ -29,7 +29,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
     composition(pair._1, pair._2)
 
   implicit def str2ddlHelper(str: String): DefinitionHelper[R] =
-    new DefinitionHelper(str, this)
+    new DefinitionHelper((OrmConfiguration) => str, this)
 
   /*!## Record State
 
@@ -72,6 +72,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
   else {
     val root = relation.AS("root")
     val id = PRIMARY_KEY()
+     val tx: Transaction = ormConf.transactionManager.get
     tx.cache.evictRecord(id, relation)
     SELECT(root.*).FROM(root).WHERE(root.PRIMARY_KEY EQ id).unique() match {
       case Some(r: R) =>
@@ -85,6 +86,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
   def INSERT_!(fields: Field[_, R]*)(implicit ormConf: ORMConfiguration): Int = if (relation.isReadOnly)
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
   else {
+     val tx: Transaction = ormConf.transactionManager.get
     // Execute events
     relation.beforeInsert.foreach(c => c(this))
     // Prepare and execute query
@@ -114,6 +116,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
   def UPDATE_!(fields: Field[_, R]*)(implicit ormConf: ORMConfiguration): Int = if (relation.isReadOnly)
     throw new ORMException("The relation " + relation.qualifiedName + " is read-only.")
   else {
+     val tx: Transaction = ormConf.transactionManager.get
     if (PRIMARY_KEY.isEmpty)
       throw new ORMException("Update is only allowed with non-null PRIMARY KEY field.")
     // Execute events
@@ -145,6 +148,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
   else {
     if (PRIMARY_KEY.isEmpty)
       throw new ORMException("Delete is only allowed with non-null PRIMARY KEY field.")
+     val tx: Transaction = ormConf.transactionManager.get
     // Execute events
     relation.beforeDelete.foreach(c => c(this))
     // Prepare and execute query
@@ -181,7 +185,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
 
   // Internal helpers
 
-  protected def evalFields(fields: Seq[Field[_, R]]): Seq[Field[_, R]] =
+  protected def evalFields(fields: Seq[Field[_, R]])(implicit ormConf: ORMConfiguration): Seq[Field[_, R]] =
     (if (fields.size == 0) relation.fields else fields)
         .map(f => relation.getField(this, f))
 

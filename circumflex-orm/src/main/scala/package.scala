@@ -17,14 +17,16 @@ package object orm {
 
   val ORM_LOG = new Logger("ru.circumflex.orm")
 
-  lazy val DEFAULT_ORM_CONF = cx.instantiate[ORMConfiguration](
+  private lazy val DEFAULT_ORM_CONF = cx.instantiate[ORMConfiguration](
     "orm.configuration", new SimpleORMConfiguration(""))
-  def ormConf = ctx.get("orm.conf") match {
+    
+  private def ormConf = ctx.get("orm.conf") match {
     case Some(c: ORMConfiguration) => c
     case _ => DEFAULT_ORM_CONF
   }
 
-  def tx: Transaction = ormConf.transactionManager.get
+  private def tx: Transaction = ormConf.transactionManager.get
+  
   def COMMIT() {
     tx.commit()
   }

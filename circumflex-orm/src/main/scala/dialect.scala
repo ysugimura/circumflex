@@ -152,7 +152,7 @@ class Dialect(implicit ormConf: ORMConfiguration) {
 
   /*!## Data Definition Language */
 
-  def constraintDefinition(constraint: Constraint) =
+  def constraintDefinition(constraint: Constraint)(implicit ormConf: ORMConfiguration) =
     "CONSTRAINT " + constraint.constraintName + " " + constraint.sqlDefinition
 
   def alterTable(rel: Relation[_, _], action: String) =

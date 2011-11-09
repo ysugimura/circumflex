@@ -26,9 +26,11 @@ class SimpleExpression(val expression: String, val _parameters: Seq[Any])(implic
   def toSql()(implicit ormConf: ORMConfiguration) = expression
 }
 
-class AggregatePredicate(val operator: String,
+class AggregatePredicate(operatorGet: (ORMConfiguration) => String,
                          protected var _predicates: Seq[Predicate])
     extends Predicate {
+  
+  def operator()(implicit ormConf: ORMConfiguration): String = operatorGet(ormConf)
   def parameters()(implicit ormConf: ORMConfiguration) = predicates.flatMap(_.parameters)
   def add(predicate: Predicate*): this.type = {
     _predicates ++= predicate.toList
@@ -112,7 +114,7 @@ class SimpleExpressionHelper(val expr: String) {
 /*! `AggregatePredicateHelper` is used to compose predicates using infix notation. */
 class AggregatePredicateHelper(predicate: Predicate) {
   def AND(predicates: Predicate*) =
-    new AggregatePredicate(ormConf.dialect.AND, predicate::predicates.toList)
+    new AggregatePredicate(_.dialect.AND, predicate::predicates.toList)
   def OR(predicates: Predicate*) =
-    new AggregatePredicate(ormConf.dialect.OR, predicate::predicates.toList)
+    new AggregatePredicate(_.dialect.OR, predicate::predicates.toList)
 }

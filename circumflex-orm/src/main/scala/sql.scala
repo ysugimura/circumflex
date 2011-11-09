@@ -34,7 +34,7 @@ abstract class Constraint(val constraintName: String,
   def sqlDrop()(implicit ormConf: ORMConfiguration) = ormConf.dialect.alterTableDropConstraint(this)
   def toSql()(implicit ormConf: ORMConfiguration) = ormConf.dialect.constraintDefinition(this)
 
-  def sqlDefinition: String
+  def sqlDefinition()(implicit ormConf: ORMConfiguration): String
 
   //TODO override def toString = toSql
   override def toString: String = throw new Exception();
@@ -44,7 +44,7 @@ class UniqueKey(name: String,
                 relation: Relation[_, _],
                 val columns: Seq[ValueHolder[_, _]])
     extends Constraint(name, relation) {
-  def sqlDefinition = ormConf.dialect.uniqueKeyDefinition(this)
+  def sqlDefinition()(implicit ormConf: ORMConfiguration) = ormConf.dialect.uniqueKeyDefinition(this)
 }
 
 class ForeignKey(name: String,
@@ -68,14 +68,14 @@ class ForeignKey(name: String,
     this
   }
 
-  def sqlDefinition = ormConf.dialect.foreignKeyDefinition(this)
+  def sqlDefinition()(implicit ormConf: ORMConfiguration) = ormConf.dialect.foreignKeyDefinition(this)
 }
 
 class CheckConstraint(name: String,
                       relation: Relation[_, _],
                       val expression: String)
     extends Constraint(name, relation) {
-  def sqlDefinition = ormConf.dialect.checkConstraintDefinition(this)
+  def sqlDefinition()(implicit ormConf: ORMConfiguration) = ormConf.dialect.checkConstraintDefinition(this)
 }
 
 class Index(val name: String,
@@ -138,25 +138,27 @@ class ForeignKeyHelper(name: String, childRelation: Relation[_, _], childColumns
     new ForeignKey(name, childRelation, childColumns, parentRelation, parentColumns)
 }
 
-class DefinitionHelper[R <: Record[_, R]](name: String, record: R) {
-  def INTEGER = new IntField(name, record)
-  def BIGINT = new LongField(name, record)
+class DefinitionHelper[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R) {
+  def INTEGER = new IntField(nameGet, record)
+  def BIGINT = new LongField(nameGet, record)
   def DOUBLE(precision: Int = -1, scale: Int = 0) =
-    new DoubleField(name, record, precision, scale)
+    new DoubleField(nameGet, record, precision, scale)
   def NUMERIC(precision: Int = -1,
               scale: Int = 0,
               roundingMode: BigDecimal.RoundingMode.RoundingMode = BigDecimal.RoundingMode.HALF_EVEN) =
-    new NumericField(name, record, precision, scale, roundingMode)
-  def TEXT = new TextField(name, record, ormConf.dialect.textType)
-  def VARCHAR(length: Int = -1) = new TextField(name, record, length)
-  def BOOLEAN = new BooleanField(name, record)
-  def DATE = new DateField(name, record)
-  def TIME = new TimeField(name, record)
-  def TIMESTAMP = new TimestampField(name, record)
-  def XML(root: String = name) = new XmlField(name, record, root)
-  def BINARY = new BinaryField(name, record)
+    new NumericField(nameGet, record, precision, scale, roundingMode)
+  def TEXT = new TextField(nameGet, record, _.dialect.textType)
+  def VARCHAR(length: Int = -1) = new TextField(nameGet, record, length)
+  def BOOLEAN = new BooleanField(nameGet, record)
+  def DATE = new DateField(nameGet, record)
+  def TIME = new TimeField(nameGet, record)
+  def TIMESTAMP = new TimestampField(nameGet, record)
+  // TODO def XML(root: (ORMConfiguration) => String = nameGet) = new XmlField(nameGet, record, root)
+  def XML(root: String = "") = throw new Exception
+  def BINARY = new BinaryField(nameGet, record)
 
-  def INDEX(expression: String) = new Index(name, record.relation, expression)
+  // TODO def INDEX(expression: String) = new Index(nameGet, record.relation, expression)
+  def INDEX(expression: String): Index = throw new Exception
 }
 
 case class ForeignKeyAction(_toSql: String) extends SQLable {

@@ -76,7 +76,7 @@ Value holder is an atomic data-carrier unit of a record. It carries methods for
 identifying and manipulating data fields inside persistent records.
 */
 trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option[T]] {
-  def name: String
+  def name()(implicit ormConf: ORMConfiguration): String
   def record: R
   def item()(implicit ormConf: ORMConfiguration) = value
 
@@ -134,19 +134,26 @@ trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option
   Finally, `toString` returns the qualified name of relation which it
   belongs to followed by a dot and the field name.
   */
+  /* TODO
   override def equals(that: Any): Boolean = that match {
     case that: ValueHolder[_, _] => this.canEqual(that) &&
         this.name == that.name
     case _ => false
   }
+  */
+  override def equals(that: Any): Boolean = throw new Exception
+  /* TODO
   override lazy val hashCode: Int =  record.relation.qualifiedName.hashCode * 31 +
       name.hashCode
+   */
+  override def hashCode: Int = throw new Exception
   def canEqual(that: Any): Boolean = that match {
     case that: ValueHolder[_, _] => this.record.canEqual(that.record)
     case _ => false
   }
-  override def toString: String = record.relation.qualifiedName + "." + name
-
+  // TODO override def toString: String = record.relation.qualifiedName + "." + name
+  override def toString: String = throw new Exception
+  
   /*! The `placeholder` method returns an expression which is used to mark a parameter
   inside JDBC `PreparedStatement` (usually `?` works, but custom data-type may require
   some special treatment).

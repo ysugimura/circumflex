@@ -15,12 +15,15 @@ tables. It also contains the `REFERENCES` method which is used to create
 associations and various methods for composing simple predicates.
 */
 class Field[T, R <: Record[_, R]](
-        val name: String,
+        val nameGet: (ORMConfiguration) => String,
         val record: R,
-        val sqlType: String)
+        sqlTypeGet: (ORMConfiguration) => String)
     extends ValueHolder[T, R] with SQLable {
 
-  def uuid = record.getClass.getName + "." + name
+  def name()(implicit ormConf: ORMConfiguration): String = nameGet(ormConf)
+  def sqlType()(implicit ormConf: ORMConfiguration) = sqlTypeGet(ormConf)
+    
+  def uuid()(implicit ormConf: ORMConfiguration) = record.getClass.getName + "." + name
 
   def toSql()(implicit ormConf: ORMConfiguration): String = ormConf.dialect.columnDefinition(this)
 
@@ -143,27 +146,27 @@ trait AutoIncrementable[T, R <: Record[_, R]] extends Field[T, R] {
   }
 }
 
-class IntField[R <: Record[_, R]](name: String, record: R)
-    extends XmlSerializable[Int, R](name, record, ormConf.dialect.integerType)
+class IntField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R)
+    extends XmlSerializable[Int, R](nameGet, record, _.dialect.integerType)
     with AutoIncrementable[Int, R] {
   def fromString(str: String): Option[Int] =
     try Some(str.toInt) catch { case e: Exception => None }
 }
 
-class LongField[R <: Record[_, R]](name: String, record: R)
-    extends XmlSerializable[Long, R](name, record, ormConf.dialect.longType)
+class LongField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R)
+    extends XmlSerializable[Long, R](nameGet, record, _.dialect.longType)
     with AutoIncrementable[Long, R]{
   def fromString(str: String): Option[Long] =
     try Some(str.toLong) catch { case e: Exception => None }
 }
 
 class DoubleField[R <: Record[_, R]](
-      name: String,
+      nameGet: (ORMConfiguration) => String,
       record: R,
       val precision: Int = -1,
       val scale: Int = 0)
     extends XmlSerializable[Double, R](
-      name, record, ormConf.dialect.numericType(precision, scale)) {
+      nameGet, record, _.dialect.numericType(precision, scale)) {
   override def read(rs: ResultSet, alias: String): Option[Double] = {
     val d = rs.getDouble(alias)
     if (rs.wasNull) None
@@ -174,13 +177,13 @@ class DoubleField[R <: Record[_, R]](
 }
 
 class NumericField[R <: Record[_, R]](
-      name: String,
+      nameGet: (ORMConfiguration) => String,
       record: R,
       val precision: Int = -1,
       val scale: Int = 0,
       val roundingMode: RoundingMode.RoundingMode = RoundingMode.HALF_EVEN)
     extends XmlSerializable[BigDecimal, R](
-      name, record, ormConf.dialect.numericType(precision, scale)) {
+      nameGet, record, _.dialect.numericType(precision, scale)) {
   def fromString(str: String): Option[BigDecimal] =
     try Some(BigDecimal(str)) catch { case e: Exception => None }
   override def read(rs: ResultSet, alias: String): Option[BigDecimal] = {
@@ -191,10 +194,12 @@ class NumericField[R <: Record[_, R]](
   addSetter(v => v.setScale(scale, roundingMode))
 }
 
-class TextField[R <: Record[_, R]](name: String, record: R, sqlType: String)
-    extends XmlSerializable[String, R](name, record, sqlType) {
-  def this(name: String, record: R, length: Int = -1) =
-    this(name, record, ormConf.dialect.varcharType(length))
+class TextField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R, sqlTypeGet: (ORMConfiguration) => String)
+    extends XmlSerializable[String, R](nameGet, record, sqlTypeGet) {
+  
+  def this(nameGet: (ORMConfiguration) => String, record: R, length: Int = -1) =
+    this(nameGet, record, _.dialect.varcharType(length))
+    
   def fromString(str: String): Option[String] =
     if (str == "") None else Some(str)
 
@@ -206,8 +211,8 @@ class TextField[R <: Record[_, R]](name: String, record: R, sqlType: String)
     new SimpleExpression(ormConf.dialect.ILIKE(aliasedName, col.toSql), Nil)
 }
 
-class BooleanField[R <: Record[_, R]](name: String, record: R)
-    extends XmlSerializable[Boolean, R](name, record, ormConf.dialect.booleanType) {
+class BooleanField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R)
+    extends XmlSerializable[Boolean, R](nameGet, record, _.dialect.booleanType) {
   def fromString(str: String): Option[Boolean] =
     try Some(str.toBoolean) catch { case e: Exception => None }
 }
@@ -217,8 +222,8 @@ object BooleanField {
     new SimpleExpression(f.aliasedName, Nil)
 }
 
-class BinaryField[R <: Record[_, R]](name: String, record: R)
-    extends Field[Array[Byte], R](name, record, ormConf.dialect.binaryType) {
+class BinaryField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R)
+    extends Field[Array[Byte], R](nameGet, record, _.dialect.binaryType) {
   override def read(rs: ResultSet, alias: String): Option[Array[Byte]] = {
     val o = rs.getBytes(alias)
     if (rs.wasNull) None
@@ -226,32 +231,32 @@ class BinaryField[R <: Record[_, R]](name: String, record: R)
   }
 }
 
-class TimestampField[R <: Record[_, R]](name: String, record: R)
-    extends XmlSerializable[Date, R](name, record, ormConf.dialect.timestampType) {
+class TimestampField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R)
+    extends XmlSerializable[Date, R](nameGet, record, _.dialect.timestampType) {
   def fromString(str: String): Option[Date] =
     try Some(new Date(java.sql.Timestamp.valueOf(str).getTime)) catch { case e: Exception => None }
   override def toString(value: Option[Date]): String =
     value.map(v => new java.sql.Timestamp(v.getTime).toString).getOrElse("")
 }
 
-class DateField[R <: Record[_, R]](name: String, record: R)
-    extends XmlSerializable[Date, R](name, record, ormConf.dialect.dateType) {
+class DateField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R)
+    extends XmlSerializable[Date, R](nameGet, record, _.dialect.dateType) {
   def fromString(str: String): Option[Date] =
     try Some(new Date(java.sql.Date.valueOf(str).getTime)) catch { case e: Exception => None }
   override def toString(value: Option[Date]): String =
     value.map(v => new java.sql.Date(v.getTime).toString).getOrElse("")
 }
 
-class TimeField[R <: Record[_, R]](name: String, record: R)
-    extends XmlSerializable[Date, R](name, record, ormConf.dialect.timeType) {
+class TimeField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R)
+    extends XmlSerializable[Date, R](nameGet, record, _.dialect.timeType) {
   def fromString(str: String): Option[Date] =
     try Some(new Date(java.sql.Time.valueOf(str).getTime)) catch { case e: Exception => None }
   override def toString(value: Option[Date]): String =
     value.map(v => new java.sql.Time(v.getTime).toString).getOrElse("")
 }
 
-class XmlField[R <: Record[_, R]](name: String, record: R, val root: String)
-    extends XmlSerializable[Elem, R](name, record, ormConf.dialect.xmlType) {
+class XmlField[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R, val root: String)
+    extends XmlSerializable[Elem, R](nameGet, record, _.dialect.xmlType) {
   def fromString(str: String): Option[Elem] = Some(XML.loadString(
     "<" + root + ">" + str + "</" + root +">"))
   override def read(rs: ResultSet, alias: String) =
@@ -264,7 +269,7 @@ class FieldComposition2[T1, T2, R <: Record[_, R]](val _1: Field[T1, R],
                                                    val record: R)
     extends ValueHolder[(T1, T2), R] {
 
-  def name = ormConf.dialect.compositeFieldName(_1.name, _2.name)
+  def name()(implicit ormConf: ORMConfiguration) = ormConf.dialect.compositeFieldName(_1.name, _2.name)
 
   override def value()(implicit ormConf: ORMConfiguration): Option[(T1, T2)] = (_1.get, _2.get) match {
     case (Some(v1), Some(v2)) => Some(v1 -> v2)
