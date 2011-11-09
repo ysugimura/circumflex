@@ -18,10 +18,12 @@ object MyBuild extends Build {
       libraryDependencies += "net.sf.ehcache" % "ehcache-core" % "2.4.6",
       libraryDependencies += "commons-io" % "commons-io" % "2.1",
       libraryDependencies += "javax.transaction" % "jta" % "1.1",
-
+      libraryDependencies += "org.scala-tools" % "subcut_2.9.0" % "0.9",
+      
       // test-only
       libraryDependencies += "ch.qos.logback" % "logback-classic" % "0.9.30" % "test",
       libraryDependencies += "com.h2database" % "h2" % "1.3.161" % "test",
+      libraryDependencies += "com.borachio" % "borachio-junit3-support_2.9.1" % "1.3" % "test",
       
       /**
        * orm-only needs these three sources.
@@ -34,5 +36,12 @@ object MyBuild extends Build {
         baseDirectory{ _ / "circumflex-orm" / "src" / "main" / "scala"},
       unmanagedSourceDirectories in Compile <+= 
         baseDirectory{ _ / "orm-only" }  
+        
+      ,defaultExcludes in Compile  := new SimpleFileFilter(
+        file => { 
+          file.getName().endsWith("Test.scala") ||
+          file.getName().endsWith("Test.java") 
+        }
+    )
   ) 
 }

@@ -16,7 +16,7 @@ It features arranging database objects in correct order (preliminary
 auxiliary objects, tables, constraints, auxiliary database objects) and
 configurable logging.
 */
-class DDLUnit {
+class DDLUnit()(implicit ormConf: ORMConfiguration) {
 
   protected var _schemata: Seq[Schema] = Nil
   def schemata = _schemata
@@ -35,13 +35,10 @@ class DDLUnit {
   def messages = _msgs
   def msgsArray: Array[Msg] = messages.toArray
 
-  /* TODO
-  def this(objects: SchemaObject*) = {
+  def this(objects: SchemaObject*)(implicit ormConf: ORMConfiguration) = {
     this()
     add(objects: _*)
   }
-  */
-  def this(objects: SchemaObject*) = { /* TODO */this }
 
   def resetMsgs(): this.type = {
     _msgs = Nil
