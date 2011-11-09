@@ -1,4 +1,4 @@
-package circumflex_orm_only
+package ru.circumflex.orm
 
 import ru.circumflex._
 import ru.circumflex.orm._
