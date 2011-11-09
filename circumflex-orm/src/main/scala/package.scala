@@ -17,32 +17,37 @@ package object orm {
 
   val ORM_LOG = new Logger("ru.circumflex.orm")
 
+  /* これはもはや不要
   private lazy val DEFAULT_ORM_CONF = cx.instantiate[ORMConfiguration](
     "orm.configuration", new SimpleORMConfiguration(""))
+    
     
   private def ormConf = ctx.get("orm.conf") match {
     case Some(c: ORMConfiguration) => c
     case _ => DEFAULT_ORM_CONF
   }
-
-  private def tx: Transaction = ormConf.transactionManager.get
   
-  def COMMIT() {
-    tx.commit()
+  private def tx: Transaction = ormConf.transactionManager.get
+  */
+  
+  def COMMIT()(implicit ormConf: ORMConfiguration) {
+    ormConf.transactionManager.get.commit()
   }
-  def ROLLBACK() {
-    tx.rollback()
+  def ROLLBACK()(implicit ormConf: ORMConfiguration) {
+    ormConf.transactionManager.get.rollback()
   }
 
+  /*　何に使うものか不明。実際に使われていない。
   def using[A](newConf: ORMConfiguration)(block: => A): A =
     Context.executeInNew { ctx =>
       ctx.update("orm.conf", newConf)
       block
     }
-
+  
   def usingAll[A](newConfs: ORMConfiguration*)(block: ORMConfiguration => A): Seq[A] =
     newConfs.map { c => using(c) { block(c) } }
-
+  */
+  
   /*! ## Alias Stack
 
   Circumflex ORM offers nice DSL to reference fields of aliased tables:
@@ -55,6 +60,9 @@ package object orm {
   `name`. However, the information about the alias is lost during this conversion.
   We use `aliasStack` to remember it during conversion so it can be accessed later.
   */
+  /*
+   * 使われているが、何のためにこれが必要なのか今のところ不明 
+   */
   object aliasStack {
     protected def _stack: Stack[String] = ctx.get("orm.aliasStack") match {
       case Some(s: Stack[String]) => s
@@ -63,8 +71,12 @@ package object orm {
         ctx += "orm.aliasStack" -> s
         s
     }
-    def pop(): Option[String] = if (_stack.size == 0) None else Some(_stack.pop())
+    def pop(): Option[String] = {
+      println("aliasStack.pop !")
+      if (_stack.size == 0) None else Some(_stack.pop())
+    }
     def push(alias: String) {
+      println("aliasStack.push !")
       _stack.push(alias)
     }
   }
