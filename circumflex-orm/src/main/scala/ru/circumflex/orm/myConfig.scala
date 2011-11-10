@@ -45,7 +45,7 @@ class MyORMConfiguration extends ORMConfiguration {
 
   private var _typeConverter: TypeConverter = null
   override def typeConverter: TypeConverter = {
-    if (_typeConverter == null) return _typeConverter
+    if (_typeConverter != null) return _typeConverter
     _typeConverter = new TypeConverter
     _typeConverter
   }
