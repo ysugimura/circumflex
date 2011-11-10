@@ -109,31 +109,31 @@ trait Relation[PK, R <: Record[PK, R]]
   introspecting current instance upon initialization.
   */
   protected var _methodsMap: Map[Field[_, R], Method] = Map()
-  def methodsMap()(implicit ormConf: ORMConfiguration): Map[Field[_, R], Method] = {
+  def methodsMap(): Map[Field[_, R], Method] = {
     init()
     _methodsMap
   }
 
   protected var _fields: List[Field[_, R]] = Nil
-  def fields()(implicit ormConf: ORMConfiguration): Seq[Field[_, R]] = {
+  def fields(): Seq[Field[_, R]] = {
     init()
     _fields
   }
 
   protected var _associations: List[Association[_, R, _]] = Nil
-  def associations()(implicit ormConf: ORMConfiguration): Seq[Association[_, R, _]] = {
+  def associations(): Seq[Association[_, R, _]] = {
     init()
     _associations
   }
 
   protected var _constraints: List[Constraint] = Nil
-  def constraints()(implicit ormConf: ORMConfiguration): Seq[Constraint] = {
+  def constraints(): Seq[Constraint] = {
     init()
     _constraints
   }
 
   protected var _indexes: List[Index] = Nil
-  def indexes()(implicit ormConf: ORMConfiguration): Seq[Index] = {
+  def indexes(): Seq[Index] = {
     init()
     _indexes
   }
