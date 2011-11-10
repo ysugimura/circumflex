@@ -48,6 +48,7 @@ class ddlTest {
     ))
   }
   
+  
   @Test
   def mysqlCreationTest() {
     implicit val ormConf = new MyORMConfiguration
@@ -57,9 +58,8 @@ class ddlTest {
     ormConf.password = ""
     */
     ormConf.dialect = new MySQLDialect
-    val unit = new DDLUnit(Country, City)  
+    val unit = new DDLUnit(Country, City)
     assertTrue(unit.createSqls == List(
-"CREATE SEQUENCE public.city_id_seq",
 "CREATE TABLE country (code VARCHAR(2) NOT NULL DEFAULT 'ch', name TEXT NOT NULL, PRIMARY KEY (code))",
 "CREATE TABLE city (id BIGINT NOT NULL AUTO_INCREMENT, name TEXT, country_code TEXT NOT NULL, PRIMARY KEY (id))",
 "ALTER TABLE city ADD CONSTRAINT city_country_code_fkey FOREIGN KEY (country_code) REFERENCES country (code) ON DELETE CASCADE ON UPDATE CASCADE"
