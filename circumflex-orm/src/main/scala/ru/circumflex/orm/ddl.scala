@@ -60,11 +60,11 @@ class DDLUnit()(implicit ormConf: ORMConfiguration) {
   }
 
   def addObject(obj: SchemaObject): this.type = {
-    def processRelation(r: Relation[_, _]) {
+    def processRelation[R <: Record[_, R]](r: Relation[_, R]) {
       addObject(r.schema)
-      r.preAux.foreach(o =>
+      ormConf.dialect.getPreAux(r).foreach(o =>
         if (!_preAux.contains(o)) _preAux ++= List(o))
-      r.postAux.foreach(o => addObject(o))
+      ormConf.dialect.getPostAux(r).foreach(o => addObject(o))      
     }
     obj match {
       case t: Table[_, _] => if (!_tables.contains(t)) {

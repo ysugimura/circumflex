@@ -207,6 +207,7 @@ class Dialect(implicit ormConf: ORMConfiguration) {
 
   def compositeFieldName(names: String*): String = names.mkString(", ")
 
+  /*
   def initializeRelation[R <: Record[_, R]](relation: Relation[_, R]) {}
 
   def initializeField[R <: Record[_, R]](field: Field[_, R]) = field match {
@@ -222,6 +223,27 @@ class Dialect(implicit ormConf: ORMConfiguration) {
     }
     case _ =>
   }
+  */
+  
+  def getPreAux[R <: Record[_, R]](relation: Relation[_, R]): List[SchemaObject] = {
+    var objects: List[SchemaObject] = Nil
+    for (field <- relation.fields) field match {
+    case f: AutoIncrementable[_, _]
+      if (f.isAutoIncrement && !field.record.relation.isInstanceOf[View[_, R]]) => {
+      val seqName = sequenceName(f)
+      val seq = new SchemaObject {
+        def objectName()(implicit ormConf: ORMConfiguration) = "SEQUENCE " + seqName
+        override def sqlDrop()(implicit ormConf: ORMConfiguration) = "DROP SEQUENCE " + seqName
+        override def sqlCreate()(implicit ormConf: ORMConfiguration) = "CREATE SEQUENCE " + seqName
+      }
+      objects = seq :: objects 
+    }
+    case _ =>        
+    }
+    objects.reverse
+  }
+  
+  def getPostAux[R <: Record[_, R]](relation: Relation[_, R]): List[SchemaObject] = Nil
 
   def defaultExpression[R <: Record[_, R]](field: Field[_, R]): String =
     field match {

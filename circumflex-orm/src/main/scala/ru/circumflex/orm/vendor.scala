@@ -38,9 +38,12 @@ class MySQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
   override def supportsSchema = false
   override def driverClass = "com.mysql.jdbc.Driver"
 
+    /*
   override def initializeField[R <: Record[_, R]](field: Field[_, R]) {
     // do nothing -- for MySQL you don't need to create manually a sequence for auto-incrementable fields
   }
+  */
+     override def getPreAux[R <: Record[_, R]](relation: Relation[_, R]): List[SchemaObject] = Nil
 
   override def defaultExpression[R <: Record[_, R]](field: Field[_, R]): String =
     field match {

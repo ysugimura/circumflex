@@ -184,8 +184,10 @@ trait Relation[PK, R <: Record[PK, R]]
     if (!_initialized) synchronized {
       if (!_initialized) try {
         findMembers(this.getClass)
+        /*
         ormConf.dialect.initializeRelation(this)
         _fields.foreach(ormConf.dialect.initializeField(_))
+        */
         this._initialized = true
       } catch {
         case e: NullPointerException =>
@@ -245,6 +247,7 @@ trait Relation[PK, R <: Record[PK, R]]
   the creating of all the tables, the latter indicates that the auxiliary
   object creation will be delayed until all tables are created.
   */
+  /*
   protected var _preAux: List[SchemaObject] = Nil
   def preAux: Seq[SchemaObject] = _preAux
   def addPreAux(objects: SchemaObject*): this.type = {
@@ -258,6 +261,7 @@ trait Relation[PK, R <: Record[PK, R]]
     objects.foreach(o => if (!_postAux.contains(o)) _postAux ++= List(o))
     this
   }
+  */
 
   /*!## Events
 
