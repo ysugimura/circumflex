@@ -155,7 +155,7 @@ trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option
     case _ => false
   }
   // TODO override def toString: String = record.relation.qualifiedName + "." + name
-  override def toString: String = throw new Exception
+  override def toString: String = "ValueHolder:" + name
   
   /*! The `placeholder` method returns an expression which is used to mark a parameter
   inside JDBC `PreparedStatement` (usually `?` works, but custom data-type may require

@@ -248,7 +248,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
   override def toString = getClass.getSimpleName + "@" +
       PRIMARY_KEY.map(_.toString).getOrElse("TRANSIENT")
   */
-  override def toString: String = throw new Exception
+  override def toString: String = "Record:" + getClass.getSimpleName
 }
 
 /*!# Identity Generation Strategies

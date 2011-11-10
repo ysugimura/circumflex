@@ -72,11 +72,17 @@ package object orm {
         s
     }
     def pop(): Option[String] = {
+      /*
       println("aliasStack.pop !")
+      Thread.dumpStack();
+      */
       if (_stack.size == 0) None else Some(_stack.pop())
     }
     def push(alias: String) {
+      /*
       println("aliasStack.push !")
+      Thread.dumpStack();
+      */
       _stack.push(alias)
     }
   }

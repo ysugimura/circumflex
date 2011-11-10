@@ -73,6 +73,7 @@ object Creation {
     
     val co = Country AS "co"
     val result = (SELECT(co.*) FROM co).list()
-    result.foreach(r => println(r.code()))
+    result.foreach(println)
+//    result.foreach(r => println(r.code()))
   }
 }
