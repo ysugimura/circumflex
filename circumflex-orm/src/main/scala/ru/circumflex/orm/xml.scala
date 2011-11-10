@@ -15,8 +15,8 @@ Every `Field` capable of (de)serializing itself (from)into XML should extend the
 `XmlSerializable` fields.
 */
 abstract class XmlSerializable[T, R <: Record[_, R]](
-    nameGet: (ORMConfiguration) => String, record: R, sqlTypeGet: (ORMConfiguration)  => String)
-    extends Field[T, R](nameGet, record, sqlTypeGet) {
+    name: String, record: R, sqlTypeGet: (ORMConfiguration)  => String)
+    extends Field[T, R](name, record, sqlTypeGet) {
   def fromString(str: String): Option[T]
   def toString(value: Option[T]): String =
     value.map(_.toString).getOrElse("")

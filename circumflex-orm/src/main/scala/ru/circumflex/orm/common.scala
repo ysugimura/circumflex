@@ -80,7 +80,7 @@ Value holder is an atomic data-carrier unit of a record. It carries methods for
 identifying and manipulating data fields inside persistent records.
 */
 trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option[T]] {
-  def name()(implicit ormConf: ORMConfiguration): String
+  def name(): String
   def record: R
   def item()(implicit ormConf: ORMConfiguration) = value
 
@@ -140,8 +140,6 @@ trait ValueHolder[T, R <: Record[_, R]] extends Container[T] with Wrapper[Option
   */
   override def equals(that: Any): Boolean = that match {
     case that: ValueHolder[_, _] => {
-      // 現在はORMConfigurationの不要なもののみ正常に動作。TODO
-      implicit val ormConf: ORMConfiguration = null
       this.canEqual(that) && this.name == that.name
     }
     case _ => false

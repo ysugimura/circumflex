@@ -29,7 +29,7 @@ abstract class Record[PK, R <: Record[PK, R]] extends Equals { this: R =>
     composition(pair._1, pair._2)
 
   implicit def str2ddlHelper(str: String): DefinitionHelper[R] =
-    new DefinitionHelper((OrmConfiguration) => str, this)
+    new DefinitionHelper(str, this)
 
   /*!## Record State
 

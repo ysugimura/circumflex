@@ -138,14 +138,14 @@ trait Relation[PK, R <: Record[PK, R]]
     _indexes
   }
 
-  private def findMembers(cl: Class[_]) (implicit ormConf: ORMConfiguration){
+  private def findMembers(cl: Class[_]) {
     if (cl != classOf[Any]) findMembers(cl.getSuperclass)
     cl.getDeclaredFields
         .flatMap(f => try Some(cl.getMethod(f.getName)) catch { case e: Exception => None })
         .foreach(processMember(_))
   }
 
-  private def processMember(m: Method)(implicit ormConf: ORMConfiguration) {
+  private def processMember(m: Method) {
     val cl = m.getReturnType
     if (classOf[ValueHolder[_, R]].isAssignableFrom(cl)) {
       val vh = m.invoke(this).asInstanceOf[ValueHolder[_, R]]
@@ -159,7 +159,7 @@ trait Relation[PK, R <: Record[PK, R]]
     }
   }
 
-  private def processHolder(vh: ValueHolder[_, R], m: Method)(implicit ormConf: ORMConfiguration) {
+  private def processHolder(vh: ValueHolder[_, R], m: Method) {
     vh match {
       case f: Field[_, R] =>
         this._fields ++= List(f)
@@ -173,14 +173,14 @@ trait Relation[PK, R <: Record[PK, R]]
     }
   }
 
-  private def associationFK(a: Association[_, R, _])(implicit ormConf: ORMConfiguration) =
+  private def associationFK(a: Association[_, R, _]) =
     CONSTRAINT(relationName + "_" + a.name + "_fkey")
         .FOREIGN_KEY(a.field)
         .REFERENCES(a.parentRelation, a.parentRelation.PRIMARY_KEY)
         .ON_DELETE(a.onDeleteClause)
         .ON_UPDATE(a.onUpdateClause)
 
-  def init()(implicit ormConf: ORMConfiguration) {
+  def init() {
     if (!_initialized) synchronized {
       if (!_initialized) try {
         findMembers(this.getClass)
@@ -235,7 +235,7 @@ trait Relation[PK, R <: Record[PK, R]]
   relation body using DSL style.
   */
   def CONSTRAINT(name: String) = new ConstraintHelper(name, this)
-  def UNIQUE(columns: ValueHolder[_, R]*)(implicit ormConf: ORMConfiguration) =
+  def UNIQUE(columns: ValueHolder[_, R]*) =
     CONSTRAINT(relationName + "_" + columns.map(_.name).mkString("_") + "_key")
         .UNIQUE(columns: _*)
 

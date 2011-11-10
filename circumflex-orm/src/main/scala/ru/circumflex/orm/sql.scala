@@ -138,26 +138,26 @@ class ForeignKeyHelper(name: String, childRelation: Relation[_, _], childColumns
     new ForeignKey(name, childRelation, childColumns, parentRelation, parentColumns)
 }
 
-class DefinitionHelper[R <: Record[_, R]](nameGet: (ORMConfiguration) => String, record: R) {
-  def INTEGER = new IntField(nameGet, record)
-  def BIGINT = new LongField(nameGet, record)
+class DefinitionHelper[R <: Record[_, R]](name: String, record: R) {
+  def INTEGER = new IntField(name, record)
+  def BIGINT = new LongField(name, record)
   def DOUBLE(precision: Int = -1, scale: Int = 0) =
-    new DoubleField(nameGet, record, precision, scale)
+    new DoubleField(name, record, precision, scale)
   def NUMERIC(precision: Int = -1,
               scale: Int = 0,
               roundingMode: BigDecimal.RoundingMode.RoundingMode = BigDecimal.RoundingMode.HALF_EVEN) =
-    new NumericField(nameGet, record, precision, scale, roundingMode)
-  def TEXT = new TextField(nameGet, record, _.dialect.textType)
-  def VARCHAR(length: Int = -1) = new TextField(nameGet, record, length)
-  def BOOLEAN = new BooleanField(nameGet, record)
-  def DATE = new DateField(nameGet, record)
-  def TIME = new TimeField(nameGet, record)
-  def TIMESTAMP = new TimestampField(nameGet, record)
-  // TODO def XML(root: (ORMConfiguration) => String = nameGet) = new XmlField(nameGet, record, root)
+    new NumericField(name, record, precision, scale, roundingMode)
+  def TEXT = new TextField(name, record, _.dialect.textType)
+  def VARCHAR(length: Int = -1) = new TextField(name, record, length)
+  def BOOLEAN = new BooleanField(name, record)
+  def DATE = new DateField(name, record)
+  def TIME = new TimeField(name, record)
+  def TIMESTAMP = new TimestampField(name, record)
+  // TODO def XML(root: (ORMConfiguration) => String = name) = new XmlField(name, record, root)
   def XML(root: String = "") = throw new Exception
-  def BINARY = new BinaryField(nameGet, record)
+  def BINARY = new BinaryField(name, record)
 
-  // TODO def INDEX(expression: String) = new Index(nameGet, record.relation, expression)
+  // TODO def INDEX(expression: String) = new Index(name, record.relation, expression)
   def INDEX(expression: String): Index = throw new Exception
 }
 

@@ -22,7 +22,7 @@ class Association[K, C <: Record[_, C], P <: Record[K, P]] (
         val field: Field[K, C], val parentRelation: Relation[K, P])
     extends ValueHolder[P, C] { assoc =>
 
-  def name()(implicit ormConf: ORMConfiguration) = field.name
+  def name() = field.name
   def record = field.record
 
   // Cascading actions
