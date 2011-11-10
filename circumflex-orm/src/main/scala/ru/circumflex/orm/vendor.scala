@@ -22,7 +22,7 @@ class H2Dialect(implicit ormConf: ORMConfiguration) extends Dialect {
     if (idx.isUnique) result += "UNIQUE "
     result += "INDEX " + idx.name + " ON " + idx.relation.qualifiedName +
         " (" + idx.expression + ")"
-    if (idx.whereClause != EmptyPredicate)
+    if (!idx.whereClause.isEmptyPredicate)
       result += " WHERE " + idx.whereClause.toInlineSql
     result
   }
@@ -65,7 +65,7 @@ class MySQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
     if (idx.isUnique) result += "UNIQUE "
     result += "INDEX " + idx.name + " USING " + idx.usingClause +
         " ON " + idx.relation.qualifiedName + " (" + idx.expression + ")"
-    if (idx.whereClause != EmptyPredicate)
+    if (!idx.whereClause.isEmptyPredicate)
       ORM_LOG.warn("Ignoring WHERE clause of INDEX " + idx.name +
           ": predicates are not supported.")
     result
@@ -73,7 +73,7 @@ class MySQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
 
   override def delete[PK, R <: Record[PK, R]](dml: Delete[PK, R]): String = {
     var result = "DELETE " + dml.node.alias + " FROM " + dml.node.toSql
-    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql
+    if (!dml.whereClause.isEmptyPredicate) result += " WHERE " + dml.whereClause.toSql
     result
   }
 }
@@ -99,7 +99,7 @@ class OracleDialect(implicit ormConf: ORMConfiguration) extends Dialect {
     if (idx.isUnique) result += "UNIQUE "
     result += "INDEX " + idx.name +
         " ON " + idx.relation.qualifiedName + " (" + idx.expression + ")"
-    if (idx.whereClause != EmptyPredicate)
+    if (!idx.whereClause.isEmptyPredicate)
       ORM_LOG.warn("Ignoring WHERE clause of INDEX " + idx.name +
           ": predicates are not supported.")
     result
@@ -146,7 +146,7 @@ class DB2Dialect(implicit ormConf: ORMConfiguration) extends Dialect {
     if (idx.isUnique) result += "UNIQUE "
     result += "INDEX " + idx.name +
         " ON " + idx.relation.qualifiedName + " (" + idx.expression + ")"
-    if (idx.whereClause != EmptyPredicate)
+    if (!idx.whereClause.isEmptyPredicate)
       ORM_LOG.warn("Ignoring WHERE clause of INDEX " + idx.name +
           ": predicates are not supported.")
     result
@@ -190,7 +190,7 @@ class MSSQLDialect(implicit ormConf: ORMConfiguration) extends Dialect {
     if (idx.isUnique) result += "UNIQUE "
     result += "INDEX " + idx.name + " ON " + idx.relation.qualifiedName +
         " (" + idx.expression + ")"
-    if (idx.whereClause != EmptyPredicate)
+    if (!idx.whereClause.isEmptyPredicate)
       result += " WHERE " + idx.whereClause.toInlineSql
     result
   }

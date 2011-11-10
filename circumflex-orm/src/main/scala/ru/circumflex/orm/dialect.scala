@@ -189,7 +189,7 @@ class Dialect(implicit ormConf: ORMConfiguration) {
     if (idx.isUnique) result += "UNIQUE "
     result += "INDEX " + idx.name + " ON " + idx.relation.qualifiedName +
         " USING " + idx.usingClause + " (" + idx.expression + ")"
-    if (idx.whereClause != EmptyPredicate)
+    if (!idx.whereClause.isEmptyPredicate)
       result += " WHERE " + idx.whereClause.toInlineSql
     result
   }
@@ -295,11 +295,11 @@ class Dialect(implicit ormConf: ORMConfiguration) {
     result += q.projections.map(_.toSql).mkString(", ")
     if (q.fromClause.size > 0)
       result += " FROM " + q.fromClause.map(_.toSql).mkString(", ")
-    if (q.whereClause != EmptyPredicate)
+    if (!q.whereClause.isEmptyPredicate)
       result += " WHERE " + q.whereClause.toSql
     if (q.groupByClause != "")
       result += " GROUP BY " + q.groupByClause
-    if (q.havingClause != EmptyPredicate)
+    if (!q.havingClause.isEmptyPredicate)
       result += " HAVING " + q.havingClause.toSql
     q.setOps.foreach {
       case (op: SetOperation, subq: SQLQuery[_]) =>
@@ -342,13 +342,13 @@ class Dialect(implicit ormConf: ORMConfiguration) {
   def update[PK, R <: Record[PK, R]](dml: Update[PK, R]): String = {
     var result = "UPDATE " + dml.node.toSql + " SET " +
         dml.setClause.map(f => f._1.name + " = " + f._1.placeholder).mkString(", ")
-    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql
+    if (!dml.whereClause.isEmptyPredicate) result += " WHERE " + dml.whereClause.toSql
     result
   }
 
   def delete[PK, R <: Record[PK, R]](dml: Delete[PK, R]): String = {
     var result = "DELETE FROM " + dml.node.toSql
-    if (dml.whereClause != EmptyPredicate) result += " WHERE " + dml.whereClause.toSql
+    if (!dml.whereClause.isEmptyPredicate) result += " WHERE " + dml.whereClause.toSql
     result
   }
 

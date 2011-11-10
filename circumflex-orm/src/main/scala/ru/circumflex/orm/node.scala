@@ -230,7 +230,7 @@ class ManyToOneJoin[PKL, L <: Record[PKL, L], PKR, R <: Record[PKR, R]](
     val association: Association[PKR, L, R],
     joinType: JoinType) extends JoinNode[PKL, L, PKR, R](childNode, parentNode, joinType) {
   override def onClause()(implicit ormConf: ORMConfiguration) =
-    if (_on == EmptyPredicate)
+    if (_on.isEmptyPredicate)
       association.joinPredicate(childNode.alias, parentNode.alias)
     else _on
 }
@@ -241,7 +241,7 @@ class OneToManyJoin[PKL, L <: Record[PKL, L], PKR, R <: Record[PKR, R]](
     val association: Association[PKL, R, L],
     joinType: JoinType) extends JoinNode[PKL, L, PKR, R](parentNode, childNode, joinType) {
   override def onClause()(implicit ormConf: ORMConfiguration) =
-    if (_on == EmptyPredicate)
+    if (_on.isEmptyPredicate)
       association.joinPredicate(childNode.alias, parentNode.alias)
     else _on
 }

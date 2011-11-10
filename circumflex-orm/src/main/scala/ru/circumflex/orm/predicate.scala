@@ -8,7 +8,10 @@ value when executed by database.
 
 Predicates are designed to participate in `WHERE` clauses of SQL queries.
 */
-trait Predicate extends Expression
+trait Predicate extends Expression {    
+  def isEmptyPredicate(implicit ormConf: ORMConfiguration) = 
+    parameters.isEmpty && ormConf.dialect.emptyPredicate == toSql
+}
 
 object Predicate {
   implicit def toAggregateHelper(predicate: Predicate) =
