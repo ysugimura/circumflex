@@ -63,6 +63,16 @@ object Creation {
     country.code := "jp"
     country.name := "japan"
     country.save
+    
+    val country2 = new Country()
+    country2.code := "us"
+    country2.name := "united states"
+    country2.save
+    
     COMMIT
+    
+    val co = Country AS "co"
+    val result = (SELECT(co.*) FROM co).list()
+    result.foreach(r => println(r.code()))
   }
 }
