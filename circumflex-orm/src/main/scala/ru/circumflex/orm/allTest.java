@@ -7,7 +7,8 @@ import org.junit.runners.Suite.SuiteClasses;
 
 @RunWith(Suite.class) 
 @SuiteClasses( { 
-  ddlTest.class
+  ddlTest.class,
+  recordTest.class
 })
 public class allTest {
   public static void main(String[] args) {

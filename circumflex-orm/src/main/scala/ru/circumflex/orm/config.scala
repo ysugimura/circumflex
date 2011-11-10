@@ -249,7 +249,22 @@ demarcation -- in this case you may provide your own implementation.
 JDBC `PreparedStatement` objects are also cached within `Transaction` for
 performance considerations.
 */
-class Transaction(protected val ormConf: ORMConfiguration) {
+trait Transaction {
+  def commit()
+  def rollback()
+  def close()
+  def cache: CacheService
+  
+  def execute[A](connActions: Connection => A,
+                 errActions: Throwable => A): A
+
+  def execute[A](sql: String,
+                 stActions: PreparedStatement => A,
+                 errActions: Throwable => A): A
+
+  def apply[A](block: => A): A
+}
+class TransactionClass(protected val ormConf: ORMConfiguration) extends Transaction {
 
   // Connections are opened lazily
   protected var _connection: Connection = null
@@ -313,7 +328,7 @@ class Transaction(protected val ormConf: ORMConfiguration) {
 
   def execute[A](sql: String,
                  stActions: PreparedStatement => A,
-                 errActions: Throwable => A)(implicit ormConf: ORMConfiguration): A = execute({ conn =>
+                 errActions: Throwable => A): A = execute({ conn =>
     ORM_LOG.debug(ormConf.prefix(": ")  + sql)
     val st =_statementsCache.get(sql).getOrElse {
       val statement = ormConf.dialect.prepareStatement(conn, sql)
@@ -324,7 +339,6 @@ class Transaction(protected val ormConf: ORMConfiguration) {
   }, errActions)
 
   def apply[A](block: => A): A = {
-    /* TODO
     val sp = getConnection.setSavepoint()
     try {
       block
@@ -338,17 +352,17 @@ class Transaction(protected val ormConf: ORMConfiguration) {
     } finally {
       getConnection.releaseSavepoint(sp)
     }
-    */
-    throw new Exception
   }
-
 }
 
-abstract class TransactionManager(protected val ormConf: ORMConfiguration) {
+trait TransactionManager {
+  def get: Transaction
+}
+abstract class TransactionManagerClass(protected val ormConf: ORMConfiguration) extends TransactionManager {
   def get: Transaction
 }
 
-class DefaultTransactionManager(override protected val ormConf: ORMConfiguration) extends TransactionManager(ormConf) {
+class DefaultTransactionManager(override protected val ormConf: ORMConfiguration) extends TransactionManagerClass(ormConf) {
 
   Context.addDestroyListener(c => try {
     get.commit()
@@ -370,13 +384,13 @@ class DefaultTransactionManager(override protected val ormConf: ORMConfiguration
   private var transaction: Transaction = null;
   
   def get: Transaction = {
-    if (transaction == null) transaction = new Transaction(ormConf)
+    if (transaction == null) transaction = new TransactionClass(ormConf)
     transaction
   }
 }
 
 // Special helper for single-user REPL usage
-class ConsoleTransactionManager(override protected val ormConf: ORMConfiguration) extends TransactionManager(ormConf) {
-  var currentTransaction = new Transaction(ormConf)
+class ConsoleTransactionManager(override protected val ormConf: ORMConfiguration) extends TransactionManagerClass(ormConf) {
+  var currentTransaction = new TransactionClass(ormConf)
   def get = currentTransaction
 }
