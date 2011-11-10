@@ -81,7 +81,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
 
   def projections: Seq[Projection[_]] = List(projection)
 
-  protected def ensureProjectionAlias[T](projection: Projection[T])(implicit ormConf: ORMConfiguration) {
+  protected def ensureProjectionAlias[T](projection: Projection[T]) {
     projection match {
       case p: AtomicProjection[_] if (p.alias == "this") => p.AS(nextAlias)
       case p: CompositeProjection[_] =>
@@ -90,8 +90,7 @@ abstract class SQLQuery[T](val projection: Projection[T]) extends Query {
     }
   }
 
-  throw new Exception
-  //ensureProjectionAlias(projection)
+  ensureProjectionAlias(projection)
 
   // Query execution
 

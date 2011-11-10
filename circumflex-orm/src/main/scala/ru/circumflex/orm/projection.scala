@@ -47,7 +47,7 @@ trait AtomicProjection[T] extends Projection[T] {
 }
 
 trait CompositeProjection[T] extends Projection[T] {
-  def subProjections()(implicit ormConf: ORMConfiguration): Seq[Projection[_]]
+  def subProjections(): Seq[Projection[_]]
   def sqlAliases()(implicit ormConf: ORMConfiguration) = subProjections.flatMap(_.sqlAliases)
 
   /* TODO
@@ -125,10 +125,10 @@ class FieldProjection[T, R <: Record[_, R]](
 class RecordProjection[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
     extends CompositeProjection[R] {
 
-  protected def _fieldProjections()(implicit ormConf: ORMConfiguration): Seq[FieldProjection[_, R]] = node
+  protected def _fieldProjections(): Seq[FieldProjection[_, R]] = node
       .relation.fields.map(f => new FieldProjection(node, f))
 
-  def subProjections()(implicit ormConf: ORMConfiguration) = _fieldProjections
+  def subProjections() = _fieldProjections
 
   protected def _readCell[T](rs: ResultSet, vh: ValueHolder[T, R])(implicit ormConf: ORMConfiguration): Option[T] = vh match {
     case f: Field[T, R] => _fieldProjections.find(_.field == f)
@@ -164,20 +164,20 @@ class RecordProjection[PK, R <: Record[PK, R]](val node: RelationNode[PK, R])
 
 class UntypedTupleProjection(val _subProjections: Projection[_]*)
     extends CompositeProjection[Array[Option[Any]]] {
-   def subProjections()(implicit ormConf: ORMConfiguration) = _subProjections
+   def subProjections() = _subProjections
   def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[Array[Option[Any]]] = Some(subProjections.map(_.read(rs)).toArray)
 }
 
 class PairProjection[T1, T2] (_1: Projection[T1], _2: Projection[T2])
     extends CompositeProjection[(Option[T1], Option[T2])] {
-  def subProjections()(implicit ormConf: ORMConfiguration) = List[Projection[_]](_1, _2)
+  def subProjections() = List[Projection[_]](_1, _2)
   def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[(Option[T1], Option[T2])] =
     Some((_1.read(rs), _2.read(rs)))
 }
 
 class AliasMapProjection(val _subProjections: Seq[Projection[_]])
     extends CompositeProjection[Map[String, Any]] {
-  def subProjections()(implicit ormConf: ORMConfiguration) = _subProjections
+  def subProjections() = _subProjections
   def read(rs: ResultSet)(implicit ormConf: ORMConfiguration): Option[Map[String, Any]] = {
     val pairs = subProjections.flatMap { p =>
       p.read(rs).map(v => p.alias -> v).asInstanceOf[Option[(String, Any)]]
